@@ -1,194 +1,203 @@
-# A Comprehensive Analysis of NVIDIA's RTX 5000 Series for Gaming Performance
-
-This report provides an in-depth technical and comparative analysis of NVIDIA’s new RTX 5000 series GPUs, with a focus on pure gaming performance. It covers architectural innovations, benchmarking results, design optimizations, and market positioning relative to both previous RTX generations and competing products such as AMD’s RX 9000 series. The following sections detail the extensive research conducted, incorporating insights from rigorous benchmarks, innovative engineering strategies, and comparative evaluations.
+# Global Cigarette Market – Policy‑Maker Briefing (2024‑2035)
 
 ---
 
-## 1. Introduction
+## 1. Executive Summary
 
-The RTX 5000 series marks a significant generational leap for NVIDIA in catering specifically to high-performance gaming. This new lineup targets enthusiasts and professionals alike, delivering improved frame rates, cutting-edge AI upscaling, and state-of-the-art ray tracing capabilities. As a follow-up to prior queries comparing the RTX 5000 series to its predecessors and to AMD's upcoming offerings, this report aggregates all recent findings to offer an exhaustive analysis of its performance benefits.
-
----
-
-## 2. Architectural Innovations and Design Enhancements
-
-### 2.1. New Blackwell Architecture
-
-- **Key Features:**
-  - Integration of 5th Generation Tensor Cores and 4th Generation RT Cores.
-  - Adoption of GDDR7 memory (up to 32GB in flagship models), offering up to 1792 GB/sec bandwidth.
-  - Enhanced AI driven features with DLSS 4's Multi Frame Generation technology that utilizes a novel transformer model and an integrated AI management processor (AMP based on RISC-V).
-
-### 2.2. Process Node Evolution
-
-- Although the physical node change from TSMC N4 to N4P only provides a ~5% improvement, this modest uplift is compensated with significant architectural tweaks such as:
-  - Increased number of CUDA cores (up to 33% more in some instances compared to the RTX 4090).
-  - Advanced power distribution management via a 30-phase VRM design in flagship models (e.g., the RTX 5090 Founders Edition).
-
-### 2.3. PCB and Cooling Innovations
-
-- **Compact Two-Slot Design:**
-  - Despite increased power envelopes (e.g., RTX 5090’s 575W vs. RTX 4090’s 450W), the engineering team managed to design a dense PCB that maintains a 2-slot footprint.
-
-- **Enhanced Thermal Management:**
-  - Implementation of dual flow-through cooling systems with liquid metal and triple-walled gaskets resulted in peak temperatures stabilized around 72°C (with even the flagship RTX 5090 successfully operating under heavy 4K loads).
-  - Advanced measures like vapor-chambers and premium phase-change thermal pads further ensure that thermal-efficiency is maintained even under high power draw conditions.
-
-- **Acoustic Engineering:**
-  - Despite the higher TDP and increased power consumption (e.g., idle power draw for the RTX 5090 is 46W compared to 28–29W for the RTX 4090), acoustic performance is optimized to around 32.5 dBA at 1 meter via targeted airflow and noise reduction strategies.
+- **Market size**: The global cigarette market is a **multi‑trillion‑dollar industry**. Estimates vary widely, ranging from **USD 707 bn (2025, MarketDataForecast)** to **USD 1.14 tn (2024, ResearchAndMarkets)**. All forecasts agree on **modest double‑digit‑trillion‑dollar** scale and **2 %‑plus annual growth** through 2035.
+- **Growth drivers**: 
+  - **Geographic concentration** – Asia‑Pacific supplies > 50 % of volume, with **China alone accounting for ~40 % of world sticks** (≈ 2.3‑2.4 trn sticks annually). 
+  - **Product‑segment shift** – **Light cigarettes** dominate (≈ 60 % of volume). **Premium, flavored, menthol, and reduced‑risk products (RRPs)** are expanding at **8‑12 % CAGR** (2025‑2033). 
+  - **Channel shift** – **Online retail** is projected to grow **12.3 % CAGR** (2025‑2033), offsetting declines in traditional tobacco‑shop sales.
+- **Regulatory pressure**: Excise‑tax hikes, plain‑pack mandates, and Article 5.3 enforcement are intensifying, especially in **high‑income markets** (EU, US, Canada). Simultaneously, **RRPs** are being **promoted** (e.g., PMI’s IQOS, BAT’s nicotine pouches) as “reduced‑risk” alternatives, creating a **policy paradox**.
+- **Key policy implication**: **Tax‑policy levers remain the most effective** tool for reducing consumption (price elasticity ≈ ‑0.44 globally, higher in Americas). However, **product‑specific elasticity** varies dramatically (HTP ≈ ‑1.2 to ‑1.3). **Targeted tiered taxes** can curb illicit trade while encouraging smokers to switch to less harmful formats.
 
 ---
 
-## 3. Gaming Performance Benchmarks
+## 2. Market Size & Forecasts (2024‑2035)
 
-The primary focus being gaming performance, this section incorporates multiple performance metrics and independent benchmarks from both synthetic tests (such as Blender and 3DMark) and popular gaming titles like Resident Evil 4, Horizon Forbidden West, Cyberpunk 2077, and Final Fantasy XVI.
+| Source | 2024 | 2025 | 2030 | 2032 | 2033/34 | CAGR (base‑year‑to‑forecast) |
+|--------|------|------|------|------|----------|------------------------------|
+| Research & Markets | **USD 720.44 bn** | – | – | – | – | – |
+| Intel Market Research | **USD 980 bn** | – | – | **USD 1.18 tn** (2032) | – | **2.8 %** |
+| MarketDataForecast (alternative) | – | **USD 707.24 bn** | – | – | **USD 868.62 bn** (2034) | **2.31 %** |
+| ResearchAndMarkets (2024) | **USD 1.129 tn** | **USD 1.150 bn** (2025) | – | – | – | **1.9 %** (to 2030) |
+| Global Tobacco Market (incl. RRPs) | **USD 954.3 bn** (2025) | – | **USD 1.0 tn** (2026) | – | – | **2.3 %** (to 2035) |
+| Broad tobacco‑product market (incl. RRPs) | – | – | – | – | **USD 1.3 tn** (2035) | **3.2 %** |
 
-### 3.1. Relative Performance Gains Over Previous Generations
-
-- **RTX 5090:**
-  - Delivers roughly 30–35% higher performance than the RTX 4090 in pure 4K, non-ray tracing gaming.
-  - Offers 20–50% improvements in average frame rates across diverse gaming titles.
-  - Demonstrates a 32% improvement in ray tracing performance alongside up to a two-fold increase in performance in specific titles.
-  - Trade-off: Elevated power draw (575W) necessitates scrutinizing efficiency and overall FPS-per-watt metrics.
-
-- **RTX 5080 and RTX 5070-Ti:**
-  - The RTX 5080 shows about a 15% performance uplift (both in rasterization and in ray tracing tasks) relative to the previous generation’s 4080-Super series.
-  - The RTX 5070-Ti positions itself as a best-value proposition for gamers by delivering approximately 20% higher performance than the older 4070-Ti-Super at a lower price point ($749.99) while boasting 16GB VRAM, making it particularly effective for high-resolution gaming.
-
-### 3.2. Technical Specifications and Numbers
-
-Table below summarizes the key specifications and performance benchmarks for representative models in the series:
-
-| Model           | CUDA Cores | Boost Clock (GHz) | TGP (W) | Memory Configuration & Bandwidth                 | Performance Gains vs. Predecessor       |
-|-----------------|------------|-------------------|---------|--------------------------------------------------|-----------------------------------------|
-| RTX 5090        | 21,760+    | Higher (e.g., ~2.62 GHz similar or above) | 575     | 32GB GDDR7, 512-bit, up to 1792 GB/sec           | ~30–35% (raster), 27–35% (RT), significant DLSS gains |
-| RTX 5080        | 10,752     | 2.62              | 360     | High-bandwidth GDDR7                              | Roughly 15–20% higher FPS in 4K gaming    |
-| RTX 5070-Ti     | 8,960      | 2.45              | 300     | 16GB VRAM, GDDR7                                 | ~20% gain over 4070-Ti-Super              |
-
-These improvements are driven by higher core counts, enhanced architectural features, and tailored driver optimizations that have addressed frametime issues previously seen in titles like Alan Wake 2.
+> **Interpretation** – The spread reflects **different scope definitions** (cigarettes only vs. all tobacco products). For policy analysis, the **cigarette‑only segment** is the most relevant, as it is the primary target of taxation and smoke‑free legislation.
 
 ---
 
-## 4. AI and Upscaling Technologies
+## 3. Regional Dynamics (2024‑2025 snapshot)
 
-### 4.1. DLSS 4 Multi Frame Generation
-
-- **Revolutionizing Frame Rates:**
-  - DLSS 4 leverages a transformer-based model combined with the inbuilt RISC-V based AMP to deliver enhanced multi-frame generation.
-  - This technology can boost performance by up to 40% in demanding, ray-traced scenes and even multiply frame rates by as much as 8X compared to traditional rendering methods.
-
-### 4.2. NVIDIA Reflex 2
-
-- **Latency Reduction:**
-  - NVIDIA Reflex 2 technology slashes input latency by up to 75%, ensuring a smoother and more responsive gaming experience, particularly in competitive gaming scenarios.
-
-### 4.3. Integration with AI-Driven Content Creation
-
-- While the primary focus here is gaming, it is important to note that these AI enhancements also accelerate creative workloads, making the RTX 5000 series a versatile choice for AI research and content production.
+| Region | Share of Global Volume (2025) | Key Trends | Policy Landscape |
+|--------|------------------------------|------------|-------------------|
+| **Asia‑Pacific** | **40.6 %** (≈ 50 % of world smokers) | China supplies **≈ 2.4 trn sticks** (≈ 40 % of world output). Light cigarettes dominate; premiumisation in emerging economies; rapid growth in **Middle East & Africa** (CAGR 6.8 % 2025‑2033). | China’s **CNTC** (state‑owned) controls ~42 % of global volume. Tax reforms modest; plain‑pack not yet mandatory. |
+| **Latin America** | ~12 % (approx.) | Fastest CAGR among emerging markets; premium and flavored segments expanding. | Several countries (e.g., Brazil, Mexico) have raised excise taxes > 70 % of retail price. |
+| **Europe (EU‑27)** | ~15 % | Light‑type cigarettes > 70 % of market; **price elasticity** high (‑0.49). **TCS 2021** shows wide price variance (€2.60‑€15.80). | **EU Tobacco Tax Directive (2028 revision)** will raise minimum excise to €215/1,000 sticks. Plain‑pack and comprehensive indoor bans still uneven (e.g., Germany lacks plain‑pack). |
+| **North America** | ~10 % | Declining volume (~‑2 % p.a.) but premiumisation maintains value. | US **Article 5.3** score high (94) – strong industry interference. Federal excise at ~ $1.01 per pack; state taxes vary. |
+| **Middle East & Africa** | ~5 % | Highest growth rate (CAGR 6.8 % 2025‑2033). | Tax structures fragmented; many countries lack > 75 % tax level. |
+| **Eastern Mediterranean** | ~4 % | Consumption rose 21.3 % (2024‑2025) due to low price growth. | Limited price elasticity; policy gaps. |
 
 ---
 
-## 5. Power Efficiency and Thermal Performance Considerations
+## 4. Product‑Segment Shifts
 
-### 5.1. Power Consumption Trade-offs
+| Segment | 2025 Share (Volume) | Growth (2025‑2033) | Notable Players / Innovations |
+|---------|--------------------|-------------------|-------------------------------|
+| **Light cigarettes** | **60.8 %** | Flat‑to‑slight decline (as smokers shift to RRPs) | Dominated by **Marlboro**, **Camel**, **Winston**. |
+| **Premium / “Other” (flavored, menthol, slim)** | ~20 % | **8.5‑12 % CAGR** | **Philip Morris International (PMI)**, **BAT**, **JTI** expanding premium lines. |
+| **Reduced‑Risk Products (RRPs)** – heated tobacco, nicotine pouches, e‑cigs | ~5‑7 % (2025) | **> 10 % CAGR** (IQOS shipments +28 % 2025) | **PMI IQOS**, **BAT Vuse/Velo**, **Imperial nicotine pouches**, **JTI Ploom**. |
+| **Online retail** | Channel share 12 % (2025) | **12.3 % CAGR** (2025‑2033) | AI‑driven e‑commerce platforms, direct‑to‑consumer (DTC) models. |
 
-- The series, particularly the RTX 5090, sees significant increases in power draw (e.g., idle and load differences such as 46W idle power compared to 29W for the RTX 4090). The increase in power is justified by the raw performance gains but does come with questions regarding overall efficiency, especially in FPS-per-watt metrics.
-
-### 5.2. Thermal Efficiency Advances
-
-- **Innovative Cooling Techniques:** As outlined earlier, advanced cooling methods are crucial for stable performance at high power loads. The full flow-through cooling system ensures that despite the high TDP (up to 575W for the RTX 5090), steady-state operational temperatures remain near 72–77°C.
-
-- **Memory Thermal Characteristics:** Although the GPU core temperatures are well-managed, memory temperatures can occasionally peak up to 89–90°C under strenuous gaming loads, prompting further investigation into long-term memory reliability under prolonged usage conditions.
-
----
-
-## 6. Comparative Analysis with Predecessor and Competitor Products
-
-### 6.1. Comparisons with Previous RTX Series Models
-
-- **RTX 5000 vs. RTX 4000 Series:**
-  - The RTX 5000 series shows a marked performance uplift across the board. For instance, while the RTX 5090 pushes around 30–35% performance improvements, the RTX 5080 and 5070-Ti deliver gains of 15% and 20% over the 4080-Super and 4070-Ti-Super, respectively.
-  - The driver optimizations and thermal management technologies in the RTX 5000 series have also resolved issues seen in earlier generations (such as inconsistencies in frametime performance in certain titles).
-
-### 6.2. Competitive Dynamics with AMD’s RX 9000 Series
-
-- **AMD’s Positioning:**
-  - Although AMD is rumored to be withdrawing from the ultra-high-end market, the RX 9000 series, exemplified by the RX 9070XT (with 16GB of VRAM), shows competitive pressure. Leaked 3DMark numbers indicate performance figures close to the RTX 5070 series, emphasizing raw performance metrics in 4K gaming.
-  - Differences in memory configuration (GDDR6 for AMD vs. GDDR7 for NVIDIA) and architectural paradigms (RDNA 4 vs. Blackwell) make efficiency and performance trade-offs a key battleground.
-
-- **Strategic Considerations:**
-  - NVIDIA’s aggressive product segmentation, with pricing ranging from about $549 for lower-end models (e.g., RTX 5060) to nearly $2,000 for flagship variants (RTX 5090 Founders Edition), contrasts with AMD’s mid-range focus. This segmentation not only influences immediate gaming performance metrics but also longer-term upgrade cycles and market dynamics.
+**Implication for policy makers** – **RRPs are the fastest‑growing sub‑segment** and are often **exempt from traditional excise regimes**. Aligning tax structures across product categories (e.g., **minimum tax per nicotine‑delivered unit**) can prevent product‑substitution loopholes.
 
 ---
 
-## 7. Market Impact, Value Trade-offs, and Future Outlook
+## 5. Price Elasticity & Tax Effectiveness
 
-### 7.1. Pricing Dynamics and Consumer Sentiment
+| Market | Overall Price Elasticity | HTP Elasticity | Illicit Elasticity (where measured) |
+|--------|--------------------------|----------------|-----------------------------------|
+| **Global (98‑country panel, 2008‑2022)** | **‑0.44** | **‑1.2 to ‑1.3** (≈ 4× conventional) | – |
+| **Americas** | **‑0.89** | – | – |
+| **Western Pacific** | **‑0.51** | – | – |
+| **Europe** | **‑0.49** | – | – |
+| **Pakistan (2023 tax hike)** | **‑0.566 (premium)**, **‑0.24 (economy)**, **‑1.96 (illicit)** | – | – |
+| **Nepal (2016‑2018)** | **‑0.58** | – | – |
 
-- **Premium Pricing Concerns:**
-  - The RTX 5090 is priced around $1,999.99 compared to the RTX 4090 at $1,599.99. Although this represents a 25% higher price point, the performance boost (around 30–35%) may justify the extra cost for gamers demanding uncompromised 4K and ray-traced performance.
+### 5.1 Tiered Tax Design (Illustrative)
+- **Premium tier**: Apply **specific excise** that raises price by **≥ 30 %** (elasticity ‑0.56 → ~‑17 % consumption). 
+- **Economy tier**: Use **ad‑valorem** component to avoid price spikes that fuel illicit trade; target **≥ 20 %** price increase (elasticity ‑0.24 → modest impact). 
+- **Illicit tier**: Strengthen **customs enforcement** and **track‑and‑trace**; a **10 % price rise** in legal premium can **increase illicit demand by ~1 %** (cross‑elasticity). 
 
-- **Value Proposition of the RTX 5070-Ti:**
-  - At approximately $749.99 with 16GB VRAM, the RTX 5070-Ti emerges as a clear best-value option for high-resolution gaming. Its competitive pricing relative to its performance makes it attractive for gamers who balance performance with cost efficiency.
-
-- **Consumer Debates:**
-  - Forum discussions and expert reviews reveal a divided community, with some criticisms over aggressive segmentation and high flagship pricing, while others commend the tailored use cases such as AI-enhanced gaming and professional creative workflows.
-
-### 7.2. Future Technological Projections and Speculative Trends
-
-- **Improved Driver Optimizations:**
-  - Continued refinement in driver updates (addressing issues such as frametime inconsistencies) can further enhance performance in real-world gaming scenarios.
-
-- **Potential New Technologies:**
-  - Future iterations might explore even more efficient power scaling and cooling optimizations, perhaps integrating improved liquid cooling or hybrid passive-active cooling mechanisms to further lower the thermal footprint.
-  - Given the competitive dynamics, both NVIDIA and AMD may drive innovations around VRAM management and efficiency, which could significantly impact future pricing and segmentation strategies.
-
-- **AI and Upscaling Evolution:**
-  - DLSS and AI-based rendering technologies are likely to become even more integral to gaming performance enhancements, with potential upcoming improvements focusing on reducing latency further and increasing real-time fidelity.
+### 5.2 Revenue vs. Health Trade‑off
+- **Montenegro model** (15 % specific excise increase) → **12 % revenue rise**, **consumption fall 1.5‑6 %**. 
+- **Ukraine 7‑year plan** → **NPV 426 bn** vs. industry proposal **360 bn**, **prevalence drop 2.7 pp** (≈ 488 k premature deaths averted). 
+- **EU Directive simulation** → **20‑60 % price rise** → **consumption drop up to 25 %** in low‑tax states, **revenue +30‑35 %**, **premature‑death avoidance ~1 % of adult population**.
 
 ---
 
-## 8. Conclusion
+## 6. Regulatory Landscape & Industry Interference
 
-The RTX 5000 series represents a robust and innovative leap in gaming GPU technology. Key takeaways include:
+### 6.1 Global Tobacco‑Control Indices (2025)
+- **Global Tobacco Industry Interference Index**: 100 countries assessed; **46 worsened**, **18 improved**. Highest interference: **Dominican Republic (98)**, **United States (94)**. Lowest: **Brunei (14)**, **Palau (30)**.
+- **Article 5.3 implementation**: 9 new countries (e.g., **Peru – Law No. 32159**) added statutory provisions; total **18** with binding codes.
+- **CSR bans**: **32** countries prohibit tobacco‑related CSR; **5** refuse any industry contributions.
+- **Financial‑contribution bans**: > 20 governments (e.g., **Botswana, Canada, France, Ukraine**) now prohibit political donations from tobacco firms.
 
-- **Substantial Performance Increases:** A clear generational improvement over previous RTX models with substantial enhancements in 4K gaming, ray tracing, and AI-driven rendering.
+### 6.2 EU‑Specific Policies
+- **Tobacco Tax Modernisation Act (Germany, 2021‑2026)** – incremental excise hikes for cigarettes, heated tobacco, e‑liquids. 
+- **Smoke‑free legislation** – fragmented; federal ban on workplaces, but bar/restaurant rules delegated to Länder; **plain‑pack** still absent (2025). 
+- **Advertising bans** – billboard ads prohibited (2022), heated‑tobacco ads banned (2023), e‑cigarette ads banned (2024). 
+- **TCS 2021** – Ireland & UK top (most stringent); Germany, Serbia, Switzerland, Bosnia‑Herzegovina bottom.
 
-- **Innovative Architecture and Thermal Design:** The Blackwell architecture combined with advanced cooling solutions enables such high performance while mitigating thermal concerns typically associated with higher TDP values.
-
-- **Competitive Market Positioning:** NVIDIA’s strategy of aggressive segmentation and comprehensive performance gains reinforces its position, even as AMD’s RX 9000 series introduces competitive pressure in the mid-range segment.
-
-- **Trade-offs in Efficiency:** The significant improvements come at the cost of increased power consumption, raising considerations for both energy efficiency and operational heat management under sustained loads.
-
-This comprehensive analysis, rooted in extensive benchmarking and technical evaluations, should serve as a detailed reference for experts evaluating the RTX 5000 series for high-performance gaming. Future developments in AI rendering and thermal management are expected to further refine these impressive performance metrics, while competitive dynamics will continue to push the envelope in GPU technology.
+### 6.3 Emerging‑Market Policies
+- **India** – GST increase from **28 % to 38 %** (2024‑25) on cigarettes; tiered excise hikes. 
+- **Pakistan** – tiered price hikes (economy **+ 101 Rs**, premium **+ 330 Rs**) in Feb 2023; significant consumption drop, especially among low‑income smokers. 
+- **Serbia** – minimal tax reforms; still lacks plain‑pack and comprehensive indoor bans. 
 
 ---
 
-*Note: Some projections and speculations in this report are based on emerging trends and early benchmarking data. Continued monitoring of real-world performance and driver updates is recommended for an ongoing evaluation.*
+## 7. Strategic Recommendations for Policy Makers (2024‑2026 Horizon)
 
+| Recommendation | Rationale | Implementation Steps |
+|----------------|-----------|----------------------|
+| **1. Harmonise Taxation Across Product Types** | Prevents substitution from cigarettes to cheaper RRPs. | • Adopt a **minimum tax per nicotine‑delivered unit** (e.g., €0.10 per mg nicotine). <br>• Align **HTP tax** with cigarettes (EU proposal: €108/1,000 sticks). |
+| **2. Introduce Tiered Excise Structure** | Addresses heterogeneous price elasticities and curbs illicit trade. | • Define **premium, economy, and illicit‑risk tiers**. <br>• Apply **higher specific excise** to premium tier (≥ 30 % price increase). <br>• Use **ad‑valorem** for economy tier to keep price rise moderate. |
+| **3. Strengthen Article 5.3 Enforcement** | Reduces industry interference that undermines public‑health measures. | • Adopt **statutory codes** (as Peru did). <br>• Mandate **public‑official conflict‑of‑interest registers**. |
+| **4. Expand Plain‑Packaging & Graphic‑Warning Requirements** | Proven to reduce appeal, especially among youth. | • Follow EU best‑practice (Ireland, UK). <br>• Include **RRPs** in packaging regulations. |
+| **5. Accelerate Smoke‑Free Indoor Policies** | Complements taxation; reduces second‑hand exposure. | • Enact **nationwide indoor bans** (including bars/restaurants). <br>• Provide **enforcement funding** for compliance checks. |
+| **6. Deploy Track‑and‑Trace (T&T) Systems** | Deters illicit trade, improves tax collection. | • Implement **EU‑wide T&T** (or national equivalents). <br>• Integrate with **customs data** for real‑time monitoring. |
+| **7. Leverage Digital Channels for Public‑Health Campaigns** | Online retail growth offers a channel to reach smokers. | • Require **mandatory health warnings on e‑commerce listings**. <br>• Use **AI‑driven analytics** to target high‑risk demographics. |
+| **8. Conduct Periodic Elasticity & Consumption Surveys** | Enables evidence‑based tax adjustments. | • Adopt **panel designs** similar to Pakistan/Nepal studies. <br>• Publish **open‑access datasets** for academic scrutiny. |
 
-# End of Report
+---
 
+## 8. Future Outlook (2026‑2035) – Scenarios
+
+| Scenario | Key Assumptions | Expected Market Size (Cigarettes) | Health Impact |
+|----------|----------------|-----------------------------------|--------------|
+| **Baseline (Current Policies Continue)** | EU Directive 2028 implemented; modest tax hikes in Asia‑Pacific; RRPs grow 10 % CAGR. | **USD 1.0‑1.2 tn** by 2035 (≈ 2 % CAGR). | Smoking prevalence declines **≈ 1 pp/yr** in high‑tax regions; **slow** in low‑tax emerging markets. |
+| **Aggressive Tax & Regulation** | EU minimum excise €215/1,000 sticks; India, China adopt **≥ 75 % tax**; global Article 5.3 compliance. | **USD 850 bn** by 2035 (‑2 % CAGR). | **Prevalence drop 4‑5 pp** globally; **premature‑death reduction** up to **1.5 % of adult population**. |
+| **Technology‑Driven Substitution** | Rapid consumer shift to **RRPs** (IQOS, nicotine pouches) driven by **price parity** and **regulatory exemptions**. | **Cigarette volume down 15 %**, **RRPs up 30 %** (overall tobacco market still grows). | Health impact ambiguous – **potential harm reduction** if RRPs truly lower risk; requires **robust surveillance**. |
+
+> **Speculative Note** – Some analysts project **AI‑optimised manufacturing** could cut production costs by **15‑20 %** by 2030, enabling **price competition** that may **undermine tax effectiveness** unless **minimum‑price floors** are introduced. (Flagged as speculation.)
+
+---
+
+## 9. Appendices (Data Sources & Methodology)
+
+1. **Market sizing** – Consolidated from Research & Markets, Intel Market Research, MarketDataForecast, ResearchAndMarkets, and Global Tobacco Market reports (2024‑2025). Discrepancies stem from **scope (cigarettes only vs. all tobacco products)** and **currency conversion assumptions**.
+2. **Elasticity estimates** – Derived from peer‑reviewed panel analyses (98‑country, 2008‑2022) and country‑specific studies (Pakistan, Nepal, Montenegro, Ukraine). Methodology: **log‑linear demand regressions** with controls for income, price, and cross‑price effects.
+3. **Policy indices** – WHO FCTC Global Progress Report 2025, Global Tobacco Industry Interference Index 2025, European Tobacco Control Scale 2021.
+4. **Tax simulations** – Based on EU Commission’s 2028 Directive impact model (nine Member States) and country‑level fiscal impact studies (Germany, Ukraine, Montenegro).
+5. **Product‑segment data** – Company earnings releases (PMI Q3 2025, BAT OMNI strategy Oct 2024) and market‑research firm forecasts (2025‑2033 CAGR for “Others”).
+
+---
+
+## 10. Bibliography (selected)
+
+- Research & Markets (2024). *Global Cigarette Market – Size & Forecast 2024‑2034*.
+- Intel Market Research (2024). *Cigarette Industry Outlook 2024‑2032*.
+- MarketDataForecast (2025). *Cigarette Market Size, Share & Trends 2025‑2034*.
+- WHO (2025). *Global Progress Report on the WHO Framework Convention on Tobacco Control*.
+- European Commission (2028). *Revision of the Tobacco Taxation Directive – Impact Assessment*.
+- PMI (2025). *Q3 2025 Financial Results*.
+- BAT (2024). *OMNI Strategy Overview*.
+- Various peer‑reviewed elasticity studies (2008‑2022 panel, Pakistan 2023, Nepal 2018, Montenegro 2024, Ukraine 2025).
+
+---
+
+*Prepared for policy‑makers on 2026‑05‑16. All data reflect the latest publicly available information as of this date. Where estimates diverge, the range is presented to capture uncertainty.*
 
 ## Sources
 
-- https://www.tomshardware.com/reviews/gpu-hierarchy,4388.html
-- https://linustechtips.com/topic/1596724-my-personally-recommended-gpu-from-rtx-5000-series/
-- https://www.forbes.com/sites/moorinsights/2025/01/23/nvidia-rtx-5090-graphics-card-review---get-neural-or-get-left-behind/
-- https://www.neogaf.com/threads/nvidia-official-geforce-rtx-50-vs-rtx-40-benchmarks-15-to-33-performance-uplift-without-dlss-multi-frame-generation.1679651/
-- https://pcoutlet.com/parts/video-cards/rtx-5070-ti-vs-rtx-5080-which-gpu-reigns-supreme
-- https://www.kitguru.net/components/graphic-cards/dominic-moass/nvidia-rtx-5080-review-efficiency-gains-but-a-performance-letdown/all/1/
-- https://forums.pcgamer.com/threads/rtx-5000-series-review-discussion.147293/
-- https://www.techradar.com/computing/gpu/nvidias-new-next-gen-gpu-benchmarks-cause-concern-among-pc-gamers-particularly-with-the-rtx-5080-but-dont-panic-yet
-- https://www.vcsolutions.com/blog/nvidia-rtx-5000-series-performance-unveiled/
-- https://gamersnexus.net/gpus/nvidia-geforce-rtx-5090-founders-edition-review-benchmarks-gaming-thermals-power
-- https://www.tomshardware.com/pc-components/gpus/nvidia-geforce-rtx-5090-review
-- https://www.nvidia.com/en-us/geforce/news/rtx-50-series-graphics-cards-gpu-laptop-announcements/
-- https://pcoutlet.com/parts/video-cards/nvidia-rtx-5000-series
-- https://press.asus.com/news/press-releases/asus-nvidia-geforce-rtx-50-series-graphics-cards/
-- https://galaxy.ai/youtube-summarizer/the-challenges-facing-nvidias-rtx-5000-series-and-amds-rx-8000-cards-VHQkBdeXzT0
-- https://www.xda-developers.com/nvidia-rtx-5000-not-what-you-think/
-- https://hardwarehunt.co.uk/blogs/pc-building-maintenance/amd-vs-nvidia-the-battle-between-radeon-rx-9000-and-rtx-5000?srsltid=AfmBOorJ59FR_9WsA8ol-7k9g_jPvGbbYgFK1MzbvOwRS05HQO8JdjoZ
-- https://hardforum.com/threads/2025-nvidia-versus-amd-ati-rematch-5000-versus-9000-series-edition.2038817/
-- https://9meters.com/technology/graphics/nvidia-shows-off-geforce-rtx-5090-fe-pcb-30-phases-of-stable-575w-power
-- https://www.technology.org/2025/01/20/nvidias-rtx-5090-a-technological-leap-beyond-the-rtx-4090/
+- https://www.researchandmarkets.com/reports/5775187/cigarette-market-size-share-outlook-forecast?srsltid=AfmBOooW3ArYRfpgVzN7faCzgeIhf2upd8U70oZkl8sD2jsNBIdVsssb
+- https://www.congruencemarketinsights.com/report/cigarette-market
+- https://www.stellarmr.com/report/Cigarette-Market/1844
+- https://www.marketdataforecast.com/market-reports/cigarette-market
+- https://www.intelmarketresearch.com/cigarette-market-12419
+- https://www.nextmsc.com/report/cigarette-market-3644?srsltid=AfmBOor3437z-XkF6pB8GPnTOgXaYmmzGo8bZ6YPxmroNv75lP6eyHAF
+- https://www.euromonitor.com/store/explore-reports/tobacco/cigarettes
+- https://www.who.int/publications/i/item/9789240116276
+- https://www.euromonitor.com/store/explore-reports/tobacco
+- https://www.futuremarketinsights.com/reports/tobacco-market
+- https://www.gminsights.com/industry-analysis/tobacco-products-market
+- https://www.nextmsc.com/report/cigarette-market-3644?srsltid=AfmBOoq_itpDcD6cJ_LZ-tixL3FCA9VJOts3s__9SzqLu77f-MskKBNA
+- https://www.nextmsc.com/report/cigarette-market-3644?srsltid=AfmBOopICgnJBAsSlkrcAK_XwRoh2JftnDGoDHfaqqYLMeUWuHteSLxA
+- https://www.persistencemarketresearch.com/market-research/tobacco-market.asp
+- https://www.researchandmarkets.com/reports/5899696/cigarette-market-overview-28?srsltid=AfmBOoqMepzANbEdsqs22_BPECEggg0y6-1TANHhOsG9tRzgTrjvGL-0
+- https://www.researchandmarkets.com/reports/5899696/cigarette-market-overview-28?srsltid=AfmBOopVf4KnYo88-BXFBTT4Arc3ErNFiTeOGoFHrYs4_s3Oyfww47mV
+- https://www.datamintelligence.com/research-report/cigarette-market
+- https://www.precisionbusinessinsights.com/market-reports/cigarette-market
+- https://finance.yahoo.com/news/cigarette-market-report-2025-revenues-094500997.html
+- https://www.statista.com/statistics/259204/leading-10-tobacco-companies-worldwide-based-on-net-sales/?srsltid=AfmBOorZ87jGeyYraE-4s-ATsA0coPvEqV_79YHQKiZXEU4cXIIiFufc
+- https://www.statista.com/statistics/259204/leading-10-tobacco-companies-worldwide-based-on-net-sales/?srsltid=AfmBOoqrauH14XfIOjg4Z6HyxY904ypbVVIznFgiC_Cpub396ropRlah
+- https://www.statista.com/statistics/259204/leading-10-tobacco-companies-worldwide-based-on-net-sales/?srsltid=AfmBOoqHeKrsMwtEFkRJ94vaycZ0lqOs7G-MMRA0ia8d55EqVIot94Dk
+- https://exposetobacco.org/wp-content/uploads/GlobalTIIIndex2025.pdf
+- https://www.tobaccoinduceddiseases.org/Issue-1-2025,15741
+- https://www.dkfz.de/fileadmin/user_upload/Krebspraevention/Download/pdf/Buecher_und_Berichte/2026_TA2025_Tobacco-Control-in-Europe.pdf
+- https://fctc.who.int/docs/librariesprovider12/meeting-reports/2025-global-progress-report-on-implementation-of-the-who-fctc.pdf?sfvrsn=8a0d2f8_1
+- https://www.who.int/publications/i/item/9789240112063
+- https://globaltobaccoindex.org/download/2105
+- https://www.at-schweiz.ch/documents/1130/GTI_Index_2025_Executive_Summary_Eng_vF.1.pdf
+- https://exposetobacco.org/wp-content/uploads/GlobalTIIIndex-2025.pdf
+- https://globaltobaccoindex.org/
+- https://www.tobaccocontrolscale.org/wp-content/uploads/2022/12/TCS-Report-2021-Interactive-V4.pdf
+- https://www.smokefreepartnership.eu/news/sfp-news/the-2021-tobacco-control-scale-is-out-ireland-uk-and-france-are-leading-the-ranking-while-bosnia-herzegovina-switzerland-and-serbia-have-the-lowest-score
+- https://www.kmlz.de/en/german-bundestag-decides-higher-tobacco-tax-nicotine-free-products-also-taxable-future
+- https://www.europarl.europa.eu/RegData/etudes/STUD/2026/772646/ECTI_STU(2026)772646_EN.pdf
+- https://www.economicsforhealth.org/files/research/971/spdc-price-elasticity-working-paper-f.pdf
+- https://tobaccocontrol.bmj.com/content/tobaccocontrol/early/2025/08/05/tc-2025-059487.full.pdf
+- https://tobaccocontrol.bmj.com/content/early/2025/08/05/tc-2025-059487
+- https://onlinelibrary.wiley.com/doi/abs/10.1002/hec.4888
+- https://www.cdc.gov/tobacco/php/data-statistics/economic-trends/index.html
+- https://tobacconomics.org/research/own-and-cross-price-elasticity-estimates-for-cigarette-consumption-in-pakistan-working-paper-series
+- https://www.economicsforhealth.org/research/own-and-cross-price-elasticity-estimates-for-cigarette-consumption-in-pakistan-working-paper-series
+- https://economicsforhealth.org/research/own-and-cross-price-elasticity-estimates-for-cigarette-consumption-in-pakistan-working-paper-series
+- https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0345594
+- https://www.economicsforhealth.org/files/research/969/isea-simulation-model-mne-24.12.2024-md2.pdf
+- https://assets.tobaccofreekids.org/global/pdfs/en/MOF2020-10-09.pdf
+- https://portal-uat.who.int/fctcapps/fctcapps/fctc/kh/tobacco-taxation/e-library/price-elasticity-heated-tobacco-and-cigarette-demand
+- https://ideas.repec.org/a/wly/hlthec/v33y2024i12p2708-2722.html

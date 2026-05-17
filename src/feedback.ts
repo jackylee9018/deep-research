@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateObject } from './ai/generate-object';
 import { z } from 'zod';
 
 import { getModel } from './ai/providers';

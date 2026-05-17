@@ -1,6 +1,6 @@
 # Open Deep Research
 
-An AI-powered research assistant that performs iterative, deep research on any topic by combining search engines, web scraping, and large language models.
+An AI-powered research assistant that performs iterative, deep research on any topic by combining Tavily search and large language models.
 
 The goal of this repo is to provide the simplest implementation of a deep research agent - e.g. an agent that can refine its research direction over time and deep dive into a topic. Goal is to keep the repo size at <500 LoC so it is easy to understand and build on top of.
 
@@ -78,8 +78,8 @@ flowchart TB
 
 - Node.js environment
 - API keys for:
-  - Firecrawl API (for web search and content extraction)
-  - OpenAI API (for o3 mini model)
+  - [Tavily](https://tavily.com/) API (for web search)
+  - [OpenRouter](https://openrouter.ai/) API (recommended LLM) or OpenAI / Fireworks
 
 ## Setup
 
@@ -92,20 +92,32 @@ flowchart TB
 npm install
 ```
 
-3. Set up environment variables in a `.env.local` file:
+3. Copy `.env.example` to `.env` (or `.env.local`) and set your API keys:
 
 ```bash
-FIRECRAWL_KEY="your_firecrawl_key"
-# If you want to use your self-hosted Firecrawl, add the following below:
-# FIRECRAWL_BASE_URL="http://localhost:3002"
-
-OPENAI_KEY="your_openai_key"
+cp .env.example .env
 ```
 
-To use local LLM, comment out `OPENAI_KEY` and instead uncomment `OPENAI_ENDPOINT` and `OPENAI_MODEL`:
+`npm start` loads `.env` first, then `.env.local` (local overrides). Put real keys in at least one of these files — do not leave placeholder values in `.env.local` if that file exists.
 
-- Set `OPENAI_ENDPOINT` to the address of your local server (eg."http://localhost:1234/v1")
-- Set `OPENAI_MODEL` to the name of the model loaded in your local server.
+Recommended setup (OpenRouter + Tavily):
+
+```bash
+TAVILY_API_KEY="tvly-your_api_key"
+OPENROUTER_API_KEY="sk-or-v1-your_api_key"
+OPENROUTER_MODEL="google/gemini-2.5-flash-preview"
+```
+
+Alternatively, use any OpenAI-compatible endpoint:
+
+```bash
+TAVILY_API_KEY="tvly-your_api_key"
+OPENAI_KEY="your_api_key"
+OPENAI_ENDPOINT="https://openrouter.ai/api/v1"
+CUSTOM_MODEL="google/gemini-2.5-flash-preview"
+```
+
+For a local LLM server, set `OPENAI_ENDPOINT` (e.g. `http://localhost:1234/v1`) and `CUSTOM_MODEL` to your loaded model name.
 
 ### Docker
 
@@ -152,9 +164,7 @@ The final report will be saved as `report.md` or `answer.md` in your working dir
 
 ### Concurrency
 
-If you have a paid version of Firecrawl or a local version, feel free to increase the `ConcurrencyLimit` by setting the `CONCURRENCY_LIMIT` environment variable so it runs faster.
-
-If you have a free version, you may sometimes run into rate limit errors, you can reduce the limit to 1 (but it will run a lot slower).
+Increase parallel search requests with `SEARCH_CONCURRENCY` (default: 2). Lower it to `1` if you hit Tavily rate limits.
 
 ### DeepSeek R1
 
@@ -166,14 +176,30 @@ FIREWORKS_KEY="api_key"
 
 The system will automatically switch over to use R1 instead of `o3-mini` when the key is detected.
 
-### Custom endpoints and models
+### OpenRouter
 
-There are 2 other optional env vars that lets you tweak the endpoint (for other OpenAI compatible APIs like OpenRouter or Gemini) as well as the model string.
+Set `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (alias: `CUSTOM_MODEL`). The client automatically uses `https://openrouter.ai/api/v1` and sends OpenRouter-recommended headers.
+
+The same model can be served by multiple backends on OpenRouter (different quality, price, and quantization). Use provider routing env vars to pick a backend:
 
 ```bash
-OPENAI_ENDPOINT="custom_endpoint"
-CUSTOM_MODEL="custom_model"
+# Prefer these provider slugs, in order (copy slug from the model page on OpenRouter)
+OPENROUTER_PROVIDER="deepinfra,together"
+
+# Or restrict to only these providers
+# OPENROUTER_PROVIDER_ONLY="deepinfra"
+
+# Skip providers you do not want (e.g. a low-quality fp8 host)
+# OPENROUTER_PROVIDER_IGNORE="some-provider"
+
+# Prefer higher-precision quantizations (avoids fp8 when you set fp16/bf16)
+OPENROUTER_QUANTIZATIONS="fp16,bf16"
+
+# Set to false to disable fallback to other providers when yours are unavailable
+# OPENROUTER_ALLOW_FALLBACKS=false
 ```
+
+OpenRouter models use tool/JSON mode instead of strict `json_schema` (better compatibility with models like `openai/gpt-oss-120b`). For best results, prefer models with strong instruction-following (e.g. `google/gemini-2.5-flash-preview`, `anthropic/claude-3.5-sonnet`). Set `STRUCTURED_OUTPUTS=true` only if your model supports OpenAI-style JSON schema.
 
 ## How It Works
 

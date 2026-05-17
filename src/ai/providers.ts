@@ -7,15 +7,49 @@ import {
 } from 'ai';
 import { getEncoding } from 'js-tiktoken';
 
+import {
+  createOpenRouterFetch,
+  getOpenRouterProviderRouting,
+} from './openrouter-routing';
 import { RecursiveCharacterTextSplitter } from './text-splitter';
 
-// Providers
-const openai = process.env.OPENAI_KEY
+// Providers (OpenRouter via OPENROUTER_API_KEY or OPENAI_KEY + OPENAI_ENDPOINT)
+const llmApiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_KEY;
+const llmBaseURL =
+  process.env.OPENAI_ENDPOINT ||
+  (process.env.OPENROUTER_API_KEY ? 'https://openrouter.ai/api/v1' : 'https://api.openai.com/v1');
+const llmModelId = process.env.CUSTOM_MODEL || process.env.OPENROUTER_MODEL;
+
+export function isOpenRouter(): boolean {
+  return llmBaseURL.includes('openrouter.ai') || Boolean(process.env.OPENROUTER_API_KEY);
+}
+
+const useStructuredOutputs =
+  process.env.STRUCTURED_OUTPUTS === 'true' ||
+  (!isOpenRouter() && process.env.STRUCTURED_OUTPUTS !== 'false');
+
+const openRouterProviderRouting = isOpenRouter()
+  ? getOpenRouterProviderRouting()
+  : undefined;
+
+const openai = llmApiKey
   ? createOpenAI({
-      apiKey: process.env.OPENAI_KEY,
-      baseURL: process.env.OPENAI_ENDPOINT || 'https://api.openai.com/v1',
+      apiKey: llmApiKey,
+      baseURL: llmBaseURL,
+      headers:
+        llmBaseURL.includes('openrouter.ai')
+          ? {
+              'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://github.com/dzhng/deep-research',
+              'X-Title': process.env.OPENROUTER_TITLE || 'Open Deep Research',
+            }
+          : undefined,
+      fetch: openRouterProviderRouting
+        ? createOpenRouterFetch(openRouterProviderRouting)
+        : undefined,
     })
   : undefined;
+
+export { getOpenRouterProviderRouting } from './openrouter-routing';
 
 const fireworks = process.env.FIREWORKS_KEY
   ? createFireworks({
@@ -23,9 +57,9 @@ const fireworks = process.env.FIREWORKS_KEY
     })
   : undefined;
 
-const customModel = process.env.CUSTOM_MODEL
-  ? openai?.(process.env.CUSTOM_MODEL, {
-      structuredOutputs: true,
+const customModel = llmModelId
+  ? openai?.(llmModelId, {
+      structuredOutputs: useStructuredOutputs,
     })
   : undefined;
 
@@ -52,7 +86,12 @@ export function getModel(): LanguageModelV1 {
 
   const model = deepSeekR1Model ?? o3MiniModel;
   if (!model) {
-    throw new Error('No model found');
+    if (process.env.OPENROUTER_API_KEY && !llmModelId) {
+      throw new Error('Set OPENROUTER_MODEL or CUSTOM_MODEL when using OpenRouter');
+    }
+    throw new Error(
+      'No model found. Set OPENROUTER_API_KEY + OPENROUTER_MODEL, or OPENAI_KEY, or FIREWORKS_KEY',
+    );
   }
 
   return model as LanguageModelV1;
