@@ -4,5 +4,8 @@ services:
     build: .
     env_file:
       - .env.local
+    environment:
+      # Override in .env.local; used at runtime by GET /api/app-config
+      OPENWEBUI_URL: ${OPENWEBUI_URL:-https://ai.spit.hk}
     ports:
       - '3000:3000'

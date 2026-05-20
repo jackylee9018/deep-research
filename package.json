@@ -7,6 +7,7 @@
     "tsx": "tsx --env-file=.env --env-file=.env.local",
     "start": "tsx --env-file=.env --env-file=.env.local src/run.ts",
     "api": "tsx --env-file=.env --env-file=.env.local src/api.ts",
+    "dev": "next dev",
     "dev:web": "next dev",
     "build:web": "next build",
     "start:web": "next start -p 3000",

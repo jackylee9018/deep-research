@@ -156,7 +156,22 @@ Development:
 npm run dev:web
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The UI walks through follow-up questions (report mode), shows live research progress, streams the final markdown report, and lets you copy or download the result.
+Open [http://localhost:3000](http://localhost:3000).
+
+- **Home** — landing UI styled like Open WebUI; pressing Enter on the prompt opens your Open WebUI instance with the [official `q` URL parameter](https://docs.openwebui.com/features/chat-conversations/chat-features/url-params) (auto-submits the first message).
+- **Deep Research** (`/research`) — iterative research flow with follow-up questions, live progress, and exportable reports.
+
+Configure Open WebUI in `.env.local` (change the URL anytime — **no rebuild** needed if you use `OPENWEBUI_URL`):
+
+```bash
+OPENWEBUI_URL="https://ai.spit.hk"
+# Optional: pre-select a model in Open WebUI
+# NEXT_PUBLIC_OPENWEBUI_MODEL="your-model-id"
+```
+
+Verify: open `http://localhost:3000/api/app-config` — `openWebUIUrl` must be your Open WebUI host, **not** this app's URL. If both run on the same domain, set `OPENWEBUI_URL` to the path or subdomain where Open WebUI actually lives.
+
+Scheme A (redirect) does **not** require an API key. After changing env, restart `npm run dev:web` or `docker compose up -d`.
 
 Production build:
 
