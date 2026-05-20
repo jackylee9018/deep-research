@@ -4,6 +4,7 @@ import pLimit from 'p-limit';
 import { z } from 'zod';
 
 import { getModel, trimPrompt } from './ai/providers';
+import { normalizeReportMarkdown } from './normalize-report-markdown';
 import { systemPrompt } from './prompt';
 import { search, type SearchResponse } from './search';
 
@@ -20,6 +21,42 @@ export type ResearchProgress = {
   totalQueries: number;
   completedQueries: number;
 };
+
+export type ResearchStep =
+  | 'query-analysis'
+  | 'web-search'
+  | 'evaluation-cross-check'
+  | 'synthesis'
+  | 'report-generation';
+
+export type ResearchActivity =
+  | {
+      type: 'step';
+      step: ResearchStep;
+      status: 'active' | 'done';
+      detail?: string;
+    }
+  | {
+      type: 'log';
+      icon: 'search' | 'brain' | 'link' | 'check';
+      message: string;
+    }
+  | {
+      type: 'query-plan';
+      queries: string[];
+    }
+  | {
+      type: 'search-result';
+      query: string;
+      urls: string[];
+      resultCount: number;
+    }
+  | {
+      type: 'learning-result';
+      query: string;
+      learningsCount: number;
+      followUpCount: number;
+    };
 
 type ResearchResult = {
   learnings: string[];
@@ -111,6 +148,11 @@ async function processSerpResult({
   return res.object;
 }
 
+export type FinalReportResult = {
+  title: string;
+  markdown: string;
+};
+
 export async function writeFinalReport({
   prompt,
   learnings,
@@ -119,7 +161,7 @@ export async function writeFinalReport({
   prompt: string;
   learnings: string[];
   visitedUrls: string[];
-}) {
+}): Promise<FinalReportResult> {
   const learningsString = learnings
     .map(learning => `<learning>\n${learning}\n</learning>`)
     .join('\n');
@@ -128,16 +170,27 @@ export async function writeFinalReport({
     model: getModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
-      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as as detailed as possible, aim for 3 or more pages, include ALL the learnings from research:\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from previous research:\n\n<learnings>\n${learningsString}\n</learnings>`,
+      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as as detailed as possible, aim for 3 or more pages, include ALL the learnings from research. Use GitHub-Flavored Markdown only: ##/### headings, lists, blockquotes, and pipe tables with header row and |---|---| separator for comparisons and numeric data. Never use HTML tags (no <a>, <div>, etc.). Section titles must use ## or ###, not numbered plain text or HTML anchors.\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from previous research:\n\n<learnings>\n${learningsString}\n</learnings>`,
     ),
     schema: z.object({
-      reportMarkdown: z.string().describe('Final report on the topic in Markdown'),
+      reportTitle: z
+        .string()
+        .describe(
+          'A short, descriptive title for this report (3–12 words). Use the same language as the user prompt. Suitable as a document name — no slashes or file extensions.',
+        ),
+      reportMarkdown: z
+        .string()
+        .describe(
+          'Final report in GitHub-Flavored Markdown with pipe tables (header + |---|---| row) for data',
+        ),
     }),
   });
 
-  // Append the visited URLs section to the report
   const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
-  return res.object.reportMarkdown + urlsSection;
+  return {
+    title: res.object.reportTitle.trim(),
+    markdown: normalizeReportMarkdown(res.object.reportMarkdown) + urlsSection,
+  };
 }
 
 export async function writeFinalAnswer({
@@ -174,6 +227,7 @@ export async function deepResearch({
   learnings = [],
   visitedUrls = [],
   onProgress,
+  onActivity,
 }: {
   query: string;
   breadth: number;
@@ -181,6 +235,7 @@ export async function deepResearch({
   learnings?: string[];
   visitedUrls?: string[];
   onProgress?: (progress: ResearchProgress) => void;
+  onActivity?: (activity: ResearchActivity) => void;
 }): Promise<ResearchResult> {
   const progress: ResearchProgress = {
     currentDepth: depth,
@@ -196,10 +251,48 @@ export async function deepResearch({
     onProgress?.(progress);
   };
 
+  const reportActivity = (activity: ResearchActivity) => {
+    onActivity?.(activity);
+  };
+
+  reportActivity({
+    type: 'step',
+    step: 'query-analysis',
+    status: 'active',
+    detail: '正在分析查詢意圖',
+  });
+  reportActivity({
+    type: 'log',
+    icon: 'brain',
+    message: '正在分析查詢意圖與研究範圍...',
+  });
+
   const serpQueries = await generateSerpQueries({
     query,
     learnings,
     numQueries: breadth,
+  });
+
+  reportActivity({
+    type: 'query-plan',
+    queries: serpQueries.map(item => item.query),
+  });
+  reportActivity({
+    type: 'step',
+    step: 'query-analysis',
+    status: 'done',
+    detail: `完成查詢規劃，共 ${serpQueries.length} 個子查詢`,
+  });
+  reportActivity({
+    type: 'step',
+    step: 'web-search',
+    status: 'active',
+    detail: `已啟動 ${serpQueries.length} 個搜尋任務`,
+  });
+  reportActivity({
+    type: 'log',
+    icon: 'search',
+    message: `發起 ${serpQueries.length} 個平行搜索任務...`,
   });
 
   reportProgress({
@@ -213,6 +306,11 @@ export async function deepResearch({
     serpQueries.map(serpQuery =>
       limit(async () => {
         try {
+          reportActivity({
+            type: 'log',
+            icon: 'search',
+            message: `搜尋中：${serpQuery.query}`,
+          });
           const result = await search(serpQuery.query, {
             timeoutMs: 15_000,
             limit: 5,
@@ -220,19 +318,58 @@ export async function deepResearch({
 
           // Collect URLs from this search
           const newUrls = compact(result.data.map(item => item.url));
+          reportActivity({
+            type: 'search-result',
+            query: serpQuery.query,
+            urls: newUrls,
+            resultCount: newUrls.length,
+          });
+          reportActivity({
+            type: 'log',
+            icon: 'link',
+            message: `「${serpQuery.query}」取得 ${newUrls.length} 個來源`,
+          });
           const newBreadth = Math.ceil(breadth / 2);
           const newDepth = depth - 1;
 
+          reportActivity({
+            type: 'step',
+            step: 'evaluation-cross-check',
+            status: 'active',
+            detail: '正在提取關鍵事實並交叉比對',
+          });
           const newLearnings = await processSerpResult({
             query: serpQuery.query,
             result,
             numFollowUpQuestions: newBreadth,
+          });
+          reportActivity({
+            type: 'learning-result',
+            query: serpQuery.query,
+            learningsCount: newLearnings.learnings.length,
+            followUpCount: newLearnings.followUpQuestions.length,
+          });
+          reportActivity({
+            type: 'log',
+            icon: 'check',
+            message: `已提取 ${newLearnings.learnings.length} 條關鍵事實，並產生 ${newLearnings.followUpQuestions.length} 個延伸方向`,
           });
           const allLearnings = [...learnings, ...newLearnings.learnings];
           const allUrls = [...visitedUrls, ...newUrls];
 
           if (newDepth > 0) {
             log(`Researching deeper, breadth: ${newBreadth}, depth: ${newDepth}`);
+            reportActivity({
+              type: 'step',
+              step: 'synthesis',
+              status: 'active',
+              detail: `進入更深層研究（剩餘深度 ${newDepth}）`,
+            });
+            reportActivity({
+              type: 'log',
+              icon: 'brain',
+              message: `發現可深入方向，正在展開第 ${newDepth} 層研究...`,
+            });
 
             reportProgress({
               currentDepth: newDepth,
@@ -253,12 +390,19 @@ export async function deepResearch({
               learnings: allLearnings,
               visitedUrls: allUrls,
               onProgress,
+              onActivity,
             });
           } else {
             reportProgress({
               currentDepth: 0,
               completedQueries: progress.completedQueries + 1,
               currentQuery: serpQuery.query,
+            });
+            reportActivity({
+              type: 'step',
+              step: 'evaluation-cross-check',
+              status: 'done',
+              detail: '本輪來源評估完成',
             });
             return {
               learnings: allLearnings,
@@ -271,6 +415,11 @@ export async function deepResearch({
           } else {
             log(`Error running query: ${serpQuery.query}: `, e);
           }
+          reportActivity({
+            type: 'log',
+            icon: 'link',
+            message: `「${serpQuery.query}」搜尋失敗，已自動跳過`,
+          });
           return {
             learnings: [],
             visitedUrls: [],

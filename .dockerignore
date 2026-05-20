@@ -1,0 +1,7 @@
+node_modules
+.next
+.git
+*.md
+report.md
+answer.md
+output.md

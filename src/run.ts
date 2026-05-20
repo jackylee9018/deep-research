@@ -1,13 +1,14 @@
 import * as fs from 'fs/promises';
 import * as readline from 'readline';
 
-import { getModel } from './ai/providers';
+import { logModelConfiguration } from './ai/providers';
 import {
   deepResearch,
   writeFinalAnswer,
   writeFinalReport,
 } from './deep-research';
 import { generateFeedback } from './feedback';
+import { filenameFromTitle, resolveUniqueFilename } from './filename';
 
 // Helper function for consistent logging
 function log(...args: any[]) {
@@ -30,7 +31,7 @@ function askQuestion(query: string): Promise<string> {
 
 // run the agent
 async function run() {
-  console.log('Using model: ', getModel().modelId);
+  logModelConfiguration();
 
   // Get initial query
   const initialQuery = await askQuestion('What would you like to research? ');
@@ -94,24 +95,32 @@ ${followUpQuestions.map((q: string, i: number) => `Q: ${q}\nA: ${answers[i]}`).j
   log('Writing final report...');
 
   if (isReport) {
-    const report = await writeFinalReport({
+    const { title, markdown } = await writeFinalReport({
       prompt: combinedQuery,
       learnings,
       visitedUrls,
     });
 
-    await fs.writeFile('report.md', report, 'utf-8');
-    console.log(`\n\nFinal Report:\n\n${report}`);
-    console.log('\nReport has been saved to report.md');
+    const reportFile = await resolveUniqueFilename(
+      process.cwd(),
+      filenameFromTitle(title),
+    );
+    await fs.writeFile(reportFile, markdown, 'utf-8');
+    console.log(`\n\nFinal Report (${title}):\n\n${markdown}`);
+    console.log(`\nReport has been saved to ${reportFile}`);
   } else {
     const answer = await writeFinalAnswer({
       prompt: combinedQuery,
       learnings,
     });
 
-    await fs.writeFile('answer.md', answer, 'utf-8');
+    const answerFile = await resolveUniqueFilename(
+      process.cwd(),
+      filenameFromTitle(initialQuery, 'answer'),
+    );
+    await fs.writeFile(answerFile, answer, 'utf-8');
     console.log(`\n\nFinal Answer:\n\n${answer}`);
-    console.log('\nAnswer has been saved to answer.md');
+    console.log(`\nAnswer has been saved to ${answerFile}`);
   }
 
   rl.close();

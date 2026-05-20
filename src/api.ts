@@ -1,7 +1,8 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
 
-import { deepResearch, writeFinalAnswer,writeFinalReport } from './deep-research';
+import { deepResearch, writeFinalAnswer, writeFinalReport } from './deep-research';
+import { filenameFromTitle } from './filename';
 
 const app = express();
 const port = process.env.PORT || 3051;
@@ -75,14 +76,20 @@ app.post('/api/generate-report',async(req:Request,res:Response)=>{
     log(
       `\n\nVisited URLs (${visitedUrls.length}):\n\n${visitedUrls.join('\n')}`,
     );
-    const report = await writeFinalReport({
-      prompt:query,
+    const { title, markdown } = await writeFinalReport({
+      prompt: query,
       learnings,
-      visitedUrls
+      visitedUrls,
     });
 
-    return report
-    
+    return res.json({
+      success: true,
+      title,
+      filename: filenameFromTitle(title),
+      report: markdown,
+      learnings,
+      visitedUrls,
+    });
   }catch(error:unknown){
     console.error("Error in generate report API:",error)
     return res.status(500).json({

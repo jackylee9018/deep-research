@@ -73,6 +73,7 @@ flowchart TB
 - **Smart Follow-up**: Generates follow-up questions to better understand research needs
 - **Comprehensive Reports**: Produces detailed markdown reports with findings and sources
 - **Concurrent Processing**: Handles multiple searches and result processing in parallel for efficiency
+- **Web UI**: Next.js app with streaming research progress and markdown reports (`npm run dev:web`)
 
 ## Requirements
 
@@ -123,22 +124,48 @@ For a local LLM server, set `OPENAI_ENDPOINT` (e.g. `http://localhost:1234/v1`) 
 
 1. Clone the repository
 2. Rename `.env.example` to `.env.local` and set your API keys
-
-3. Run `docker build -f Dockerfile`
-
-4. Run the Docker image:
+3. Build and start the web app:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-5. Execute `npm run docker` in the docker service:
+4. Open [http://localhost:3000](http://localhost:3000)
+
+For the interactive CLI inside the container:
 
 ```bash
-docker exec -it deep-research npm run docker
+docker exec -it deep-research npm start
 ```
+
+For the legacy Express JSON API on port 3051:
+
+```bash
+docker exec -it deep-research npm run api
+```
+
+If you run behind nginx or another reverse proxy, set **proxy read timeout to at least 10–15 minutes** — deep research requests can run for a long time.
 
 ## Usage
+
+### Web (recommended)
+
+Development:
+
+```bash
+npm run dev:web
+```
+
+Open [http://localhost:3000](http://localhost:3000). The UI walks through follow-up questions (report mode), shows live research progress, streams the final markdown report, and lets you copy or download the result.
+
+Production build:
+
+```bash
+npm run build:web
+npm run start:web
+```
+
+### CLI
 
 Run the research assistant:
 
@@ -161,6 +188,17 @@ The system will then:
 4. Generate a comprehensive markdown report
 
 The final report will be saved as `report.md` or `answer.md` in your working directory, depending on which modes you selected.
+
+### HTTP API (Express)
+
+```bash
+npm run api
+```
+
+- `POST /api/research` — short answer mode (JSON)
+- `POST /api/generate-report` — full markdown report (JSON)
+
+Default port: `3051` (override with `PORT`).
 
 ### Concurrency
 
