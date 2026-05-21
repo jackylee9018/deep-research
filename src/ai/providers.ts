@@ -8,11 +8,21 @@ import {
 } from 'ai';
 import { getEncoding } from 'js-tiktoken';
 
+import { getActiveResearchModel } from './model-context';
 import {
   createOpenRouterFetch,
   getOpenRouterProviderRouting,
 } from './openrouter-routing';
+import { resolveResearchModelId } from './research-models';
 import { RecursiveCharacterTextSplitter } from './text-splitter';
+
+export {
+  DEFAULT_RESEARCH_MODEL,
+  RESEARCH_MODEL_LABELS,
+  RESEARCH_MODELS,
+  resolveResearchModelId,
+  type ResearchModelId,
+} from './research-models';
 
 export { getOpenRouterProviderRouting } from './openrouter-routing';
 
@@ -35,7 +45,9 @@ function readLlmConfig(): LlmConfig {
     process.env.CUSTOM_MODEL ||
     process.env.OPENAI_MODEL ||
     process.env.OPENROUTER_MODEL;
-  const openRouter = llmBaseURL.includes('openrouter.ai') || Boolean(process.env.OPENROUTER_API_KEY);
+  const openRouter =
+    llmBaseURL.includes('openrouter.ai') ||
+    Boolean(process.env.OPENROUTER_API_KEY);
   const useStructuredOutputs =
     process.env.STRUCTURED_OUTPUTS === 'true' ||
     (!openRouter && process.env.STRUCTURED_OUTPUTS !== 'false');
@@ -65,13 +77,66 @@ function configCacheKey(config: LlmConfig): string {
 
 let modelCache: { key: string; model: LanguageModelV1 } | undefined;
 
+export function getLlmEnvStatus(): {
+  configured: boolean;
+  provider: 'openrouter' | 'openai' | 'fireworks' | 'none';
+  modelId: string;
+} {
+  if (process.env.FIREWORKS_KEY?.trim()) {
+    return {
+      configured: true,
+      provider: 'fireworks',
+      modelId: getConfiguredModelId(),
+    };
+  }
+
+  const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (openRouterKey) {
+    return {
+      configured: true,
+      provider: 'openrouter',
+      modelId: getConfiguredModelId(),
+    };
+  }
+
+  const openAiKey = process.env.OPENAI_KEY?.trim();
+  if (openAiKey) {
+    return {
+      configured: true,
+      provider: 'openai',
+      modelId: getConfiguredModelId(),
+    };
+  }
+
+  return {
+    configured: false,
+    provider: 'none',
+    modelId: getConfiguredModelId(),
+  };
+}
+
+export function assertLlmConfigured(): void {
+  const status = getLlmEnvStatus();
+  if (status.configured) {
+    return;
+  }
+
+  throw new Error(
+    'LLM API key 未載入。請在專案根目錄的 .env 設定 OPENROUTER_API_KEY（或 OPENAI_KEY / FIREWORKS_KEY），' +
+      '然後重新啟動 npm run dev:web。可開啟 /api/app-config 確認 llmConfigured 是否為 true。',
+  );
+}
+
 export function isOpenRouter(): boolean {
   const llmBaseURL =
     process.env.OPENAI_ENDPOINT ||
     (process.env.OPENROUTER_API_KEY
       ? 'https://openrouter.ai/api/v1'
       : 'https://api.openai.com/v1');
-  return llmBaseURL.includes('openrouter.ai') || Boolean(process.env.OPENROUTER_API_KEY);
+  return (
+    llmBaseURL.includes('openrouter.ai') ||
+    Boolean(process.env.OPENROUTER_API_KEY)
+  );
 }
 
 export type ModelEnvSource =
@@ -155,7 +220,9 @@ export function logModelConfiguration(): void {
       console.log(`OpenRouter provider: ${routing.order.join(' → ')}`);
     }
     if (routing?.quantizations?.length) {
-      console.log(`OpenRouter quantizations: ${routing.quantizations.join(', ')}`);
+      console.log(
+        `OpenRouter quantizations: ${routing.quantizations.join(', ')}`,
+      );
     }
   }
 }
@@ -173,7 +240,8 @@ function buildModel(config: LlmConfig): LanguageModelV1 {
         headers: llmBaseURL.includes('openrouter.ai')
           ? {
               'HTTP-Referer':
-                process.env.OPENROUTER_REFERER || 'https://github.com/dzhng/deep-research',
+                process.env.OPENROUTER_REFERER ||
+                'https://github.com/dzhng/deep-research',
               'X-Title': process.env.OPENROUTER_TITLE || 'Open Deep Research',
             }
           : undefined,
@@ -195,7 +263,9 @@ function buildModel(config: LlmConfig): LanguageModelV1 {
 
   if (fireworks) {
     return wrapLanguageModel({
-      model: fireworks('accounts/fireworks/models/deepseek-r1') as LanguageModelV1,
+      model: fireworks(
+        'accounts/fireworks/models/deepseek-r1',
+      ) as LanguageModelV1,
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     });
   }
@@ -210,7 +280,9 @@ function buildModel(config: LlmConfig): LanguageModelV1 {
   }
 
   if (process.env.OPENROUTER_API_KEY && !llmModelId) {
-    throw new Error('Set OPENROUTER_MODEL or CUSTOM_MODEL when using OpenRouter');
+    throw new Error(
+      'Set OPENROUTER_MODEL or CUSTOM_MODEL when using OpenRouter',
+    );
   }
 
   throw new Error(
@@ -218,15 +290,24 @@ function buildModel(config: LlmConfig): LanguageModelV1 {
   );
 }
 
-export function getModel(): LanguageModelV1 {
+export function getModel(overrideModelId?: string): LanguageModelV1 {
   const config = readLlmConfig();
-  const key = configCacheKey(config);
+  const resolvedOverride =
+    overrideModelId ?? getActiveResearchModel() ?? undefined;
+  const effectiveModelId = resolvedOverride
+    ? resolveResearchModelId(resolvedOverride)
+    : config.llmModelId;
+  const effectiveConfig: LlmConfig = {
+    ...config,
+    llmModelId: effectiveModelId,
+  };
+  const key = configCacheKey(effectiveConfig);
 
   if (modelCache?.key === key) {
     return modelCache.model;
   }
 
-  const model = buildModel(config);
+  const model = buildModel(effectiveConfig);
   modelCache = { key, model };
   return model;
 }

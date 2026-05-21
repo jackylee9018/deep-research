@@ -1,6 +1,6 @@
-import { generateObject } from './ai/generate-object';
 import { z } from 'zod';
 
+import { generateObject } from './ai/generate-object';
 import { getModel } from './ai/providers';
 import { systemPrompt } from './prompt';
 

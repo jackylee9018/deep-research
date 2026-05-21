@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
+import { resolveAppDisplayName } from './lib/app-brand';
+import { AppProviders } from './providers';
+
 import './globals.css';
 
 const inter = Inter({
@@ -9,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_APP_NAME ?? 'Open Deep Research',
+  title: resolveAppDisplayName(),
   description: 'AI-powered iterative deep research',
 };
 
@@ -20,7 +23,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-Hant">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

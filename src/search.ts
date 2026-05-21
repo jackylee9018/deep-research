@@ -1,5 +1,20 @@
 import { tavily } from '@tavily/core';
 
+export class SearchAuthError extends Error {
+  constructor(
+    message = 'Tavily API key is missing or invalid (TAVILY_API_KEY)',
+  ) {
+    super(message);
+    this.name = 'SearchAuthError';
+  }
+}
+
+function isTavilyAuthFailure(message: string): boolean {
+  return /unauthorized|invalid api key|missing.*api key|forbidden/i.test(
+    message,
+  );
+}
+
 export type SearchResultItem = {
   url?: string;
   markdown?: string;
@@ -19,17 +34,25 @@ export async function search(
 ): Promise<SearchResponse> {
   const { limit = 5, timeoutMs = 15_000 } = options;
 
-  const response = await tavilyClient.search(query, {
-    maxResults: limit,
-    searchDepth: 'advanced',
-    includeRawContent: 'markdown',
-    timeout: Math.max(1, Math.ceil(timeoutMs / 1000)),
-  });
+  try {
+    const response = await tavilyClient.search(query, {
+      maxResults: limit,
+      searchDepth: 'advanced',
+      includeRawContent: 'markdown',
+      timeout: Math.max(1, Math.ceil(timeoutMs / 1000)),
+    });
 
-  return {
-    data: response.results.map(result => ({
-      url: result.url,
-      markdown: result.rawContent || result.content,
-    })),
-  };
+    return {
+      data: response.results.map(result => ({
+        url: result.url,
+        markdown: result.rawContent || result.content,
+      })),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isTavilyAuthFailure(message)) {
+      throw new SearchAuthError(message);
+    }
+    throw error;
+  }
 }

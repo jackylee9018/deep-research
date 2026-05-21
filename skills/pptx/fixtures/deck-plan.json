@@ -1,0 +1,66 @@
+{
+  "title": "AI 客服導入提案",
+  "audience": "主管與專案決策者",
+  "tone": "專業、精簡",
+  "outline": {
+    "title": "AI 客服導入提案",
+    "audience": "主管與專案決策者",
+    "tone": "專業、精簡",
+    "slides": [
+      {
+        "index": 1,
+        "layoutId": "title",
+        "headline": "AI 客服導入提案",
+        "bulletSummary": ["導入目標與預期成果"]
+      },
+      {
+        "index": 2,
+        "layoutId": "bullets",
+        "headline": "現況挑戰",
+        "bulletSummary": ["尖峰等待時間", "客服知識分散", "人力成本上升"]
+      },
+      {
+        "index": 3,
+        "layoutId": "two_column",
+        "headline": "導入前後比較",
+        "bulletSummary": ["人工回覆", "AI 輔助回覆"]
+      },
+      {
+        "index": 4,
+        "layoutId": "closing",
+        "headline": "下一步",
+        "bulletSummary": ["確認範圍", "啟動試點", "衡量成效"]
+      }
+    ]
+  },
+  "slides": [
+    {
+      "index": 1,
+      "layoutId": "title",
+      "title": "AI 客服導入提案",
+      "subtitle": "降低等待時間，提升服務一致性"
+    },
+    {
+      "index": 2,
+      "layoutId": "bullets",
+      "title": "現況挑戰",
+      "bullets": ["尖峰時段等待時間偏高", "知識庫分散造成回覆不一致", "客服人力擴張成本持續上升"]
+    },
+    {
+      "index": 3,
+      "layoutId": "two_column",
+      "title": "導入前後比較",
+      "leftTitle": "現況",
+      "rightTitle": "導入後",
+      "leftBullets": ["人工查找答案", "回覆品質仰賴個人經驗"],
+      "rightBullets": ["AI 即時建議答案", "統一知識來源與語氣"]
+    },
+    {
+      "index": 4,
+      "layoutId": "closing",
+      "title": "建議下一步",
+      "subtitle": "以四週試點驗證效益，再擴大導入。",
+      "bullets": ["鎖定高頻問題", "建立成效指標", "每週檢視並優化"]
+    }
+  ]
+}

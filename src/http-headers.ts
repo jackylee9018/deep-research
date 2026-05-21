@@ -36,7 +36,10 @@ export function contentDispositionAttachment(filename: string): string {
       .replace(UNSAFE_FILENAME_CHARS, '_')
       .replace(/^_+|_+$/g, '') || 'download';
 
-  const asciiFallback = `${asciiBase}${ext}`.replace(UNSAFE_FILENAME_CHARS, '_');
+  const asciiFallback = `${asciiBase}${ext}`.replace(
+    UNSAFE_FILENAME_CHARS,
+    '_',
+  );
   const utf8Star = encodeURIComponent(filename);
 
   return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Star}`;

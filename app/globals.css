@@ -19,8 +19,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background: var(--bg);
-  color: var(--text);
+  background: #f9fafb;
+  color: #1f2937;
   font-family:
     ui-sans-serif,
     system-ui,
@@ -81,7 +81,7 @@ textarea {
   font-family: inherit;
 }
 
-textarea {
+textarea:not(.owui-chat-input) {
   min-height: 4rem;
   resize: vertical;
 }
@@ -526,7 +526,78 @@ button.secondary:disabled {
   font-size: 0.95rem;
 }
 
+/* —— Route background images (files in public/backgrounds/) —— */
+
+:root {
+  --route-bg-fallback: #f9fafb;
+  --route-bg-overlay: rgba(249, 250, 251, 0.35);
+  --route-bg-research: url('/backgrounds/research.png'),
+    url('/backgrounds/research.webp'), url('/backgrounds/research.jpg'),
+    url('/backgrounds/research.svg');
+  --route-bg-home: url('/backgrounds/home.png'), url('/backgrounds/home.webp'),
+    url('/backgrounds/home.jpg'), url('/backgrounds/home.svg');
+  --route-bg-ppt: url('/backgrounds/ppt.png'), url('/backgrounds/ppt.webp'),
+    url('/backgrounds/ppt.jpg'), url('/backgrounds/ppt.svg');
+}
+
+.light-route-shell.route-bg--research,
+.light-route-shell.route-bg--home,
+.light-route-shell.route-bg--ppt {
+  position: relative;
+  background: transparent;
+}
+
+.light-route-shell.route-bg--research::before,
+.light-route-shell.route-bg--home::before,
+.light-route-shell.route-bg--ppt::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--route-bg-fallback);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.light-route-shell.route-bg--research::before {
+  background-image: var(--route-bg-research);
+}
+
+.light-route-shell.route-bg--home::before {
+  background-image: var(--route-bg-home);
+}
+
+.light-route-shell.route-bg--ppt::before {
+  background-image: var(--route-bg-ppt);
+}
+
+.light-route-shell.route-bg--research::after,
+.light-route-shell.route-bg--home::after,
+.light-route-shell.route-bg--ppt::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--route-bg-overlay);
+}
+
+.light-route-shell.route-bg--research > *,
+.light-route-shell.route-bg--home > *,
+.light-route-shell.route-bg--ppt > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* —— Home landing —— */
+
+.light-route-shell {
+  min-height: 100vh;
+  background: #f9fafb;
+  color: #1f2937;
+}
 
 body:has(.home-page) {
   background: #f9fafb;
@@ -543,25 +614,56 @@ body:has(.home-page) {
 }
 
 .home-page {
+  position: relative;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6rem 0.5rem;
-  background: #f9fafb;
-  color: #1f2937;
-}
-
-.home-inner {
-  width: 100%;
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 0 0.5rem;
-  transform: translateY(1.5rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 4.5rem 0.5rem 2rem;
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+.research-bg-toast {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid #ddd6fe;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.08);
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.research-bg-toast a {
+  color: #7c3aed;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.research-bg-toast a:hover {
+  color: #6d28d9;
+}
+
+.home-inner {
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
   text-align: center;
 }
 
@@ -573,12 +675,35 @@ body:has(.home-page) {
 
 /* OWUI: title + input column (@md:max-w-3xl) */
 .home-main-column {
+  flex: 0 1 auto;
   width: 100%;
   max-width: 48rem;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.home-above-prompt {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.home-below-prompt {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.home-below-prompt:empty {
+  display: block;
 }
 
 /* Open WebUI Placeholder — hero header */
@@ -589,7 +714,7 @@ body:has(.home-page) {
   align-items: center;
   justify-content: center;
   color: #1f2937;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0;
 }
 
 .owui-placeholder-title-row {
@@ -672,8 +797,8 @@ body:has(.home-page) {
 
 .owui-placeholder-desc-wrap {
   display: flex;
-  margin-top: 0.25rem;
-  margin-bottom: 0.5rem;
+  margin-top: 0.125rem;
+  margin-bottom: 0;
 }
 
 .owui-placeholder-desc {
@@ -692,8 +817,12 @@ body:has(.home-page) {
 
 /* Open WebUI MessageInput — home prompt (light) */
 .home-prompt-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   width: 100%;
-  padding: 0.75rem 0;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -709,6 +838,7 @@ body:has(.home-page) {
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: visible;
   width: 100%;
   border-radius: 1.5rem;
   border: 1px solid rgba(243, 244, 246, 0.3);
@@ -779,6 +909,7 @@ body:has(.home-page) {
   align-items: center;
   margin: 0.125rem 0.125rem 0.625rem;
   max-width: 100%;
+  overflow: visible;
   direction: ltr;
 }
 
@@ -819,6 +950,76 @@ body:has(.home-page) {
 .owui-toolbar-icon-btn:hover {
   background: #f3f4f6;
   color: #374151;
+}
+
+.owui-toolbar-icon-btn.is-active {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.owui-toolbar-icon-btn.is-active:hover {
+  background: #c7d2fe;
+  color: #3730a3;
+}
+
+.owui-toolbar-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.prompt-toolbar-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.prompt-toolbar-tip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prompt-toolbar-tip {
+  position: absolute;
+  left: 50%;
+  z-index: 30;
+  max-width: 16rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.375rem;
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(2px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.18);
+}
+
+.prompt-toolbar-tip-wrap--top .prompt-toolbar-tip {
+  bottom: calc(100% + 0.4rem);
+}
+
+.prompt-toolbar-tip-wrap--bottom .prompt-toolbar-tip {
+  top: calc(100% + 0.4rem);
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.prompt-toolbar-tip-wrap:hover .prompt-toolbar-tip,
+.prompt-toolbar-tip-wrap:focus-within .prompt-toolbar-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.prompt-toolbar-tip-wrap--bottom:hover .prompt-toolbar-tip,
+.prompt-toolbar-tip-wrap--bottom:focus-within .prompt-toolbar-tip {
+  transform: translateX(-50%) translateY(0);
 }
 
 .owui-icon-plus {
@@ -904,7 +1105,7 @@ body:has(.home-page) {
   gap: 1.25rem;
   width: 100%;
   max-width: 42rem;
-  margin: 0.5rem auto 0;
+  margin: 0.75rem auto 0;
   justify-items: center;
 }
 
@@ -1084,9 +1285,9 @@ body:has(.research-shell) {
   color: #6b7280;
 }
 
-.research-shell input[type='text'],
+.research-shell input[type='text']:not(.owui-chat-input),
 .research-shell input[type='number'],
-.research-shell textarea {
+.research-shell textarea:not(.owui-chat-input) {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
@@ -1094,12 +1295,39 @@ body:has(.research-shell) {
   transition: border-color 0.15s ease;
 }
 
-.research-shell input[type='text']:focus,
+.research-shell input[type='text']:not(.owui-chat-input):focus,
 .research-shell input[type='number']:focus,
-.research-shell textarea:focus {
+.research-shell textarea:not(.owui-chat-input):focus {
   outline: none;
   border-color: #c4b5fd;
   box-shadow: 0 0 0 3px rgb(124 58 237 / 0.12);
+}
+
+/* Keep shared PromptInput identical to home inside /research */
+.research-shell .owui-prompt-form .owui-chat-input {
+  display: block;
+  width: 100%;
+  min-height: 1.5rem;
+  max-height: 24rem;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #1f2937;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.research-shell .owui-prompt-form .owui-chat-input:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
 }
 
 .research-shell .mode-toggle button {
@@ -1254,6 +1482,1848 @@ body:has(.research-shell) {
   color: #6b7280;
 }
 
+.research-model-select {
+  margin-top: 1rem;
+}
+
+.research-model-select select {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  color: #1a1c1e;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.research-model-select select:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.12);
+}
+
+.research-model-select--inline {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.research-model-select--inline select {
+  width: auto;
+  max-width: 11rem;
+  padding: 0.35rem 1.75rem 0.35rem 0.65rem;
+  font-size: 0.8125rem;
+  border-radius: 9999px;
+  border-color: #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+}
+
+main.research-shell--form {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.research-shell--form .home-below-prompt .research-form-meta {
+  margin-top: 0.375rem;
+}
+
+.research-shell--form .research-form-meta {
+  gap: 0.375rem;
+}
+
+.research-shell--form .error-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  max-width: min(36rem, calc(100vw - 2rem));
+  margin: 0;
+}
+
+.home-page-top-action {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.home-page-top-link {
+  pointer-events: auto;
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  font-size: 0.88rem;
+  color: #6b7280;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.home-page-top-link:hover {
+  color: #7c3aed;
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+}
+
+.research-prompt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.research-intensity-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.125rem;
+  border-radius: 9999px;
+  background: #f3f4f6;
+}
+
+.research-intensity-btn {
+  border: none;
+  border-radius: 9999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: #6b7280;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.research-intensity-btn:hover:not(:disabled) {
+  color: #374151;
+}
+
+.research-intensity-btn.is-active {
+  color: #5b21b6;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+.research-intensity-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.home-below-prompt .research-form-meta {
+  margin-top: 0.625rem;
+}
+
+.research-form-meta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0 0.125rem;
+}
+
+.research-form-meta .research-prompt-toolbar {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.research-intensity-hint {
+  margin: 0;
+  padding: 0 0.125rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.research-form-status {
+  margin: 0.5rem 0 0;
+  padding: 0 0.25rem;
+  font-size: 0.8125rem;
+  color: #7c3aed;
+}
+
+@media (max-width: 640px) {
+  .home-page-top-link {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .research-prompt-toolbar {
+    gap: 0.25rem;
+  }
+
+  .research-model-select--inline select {
+    max-width: 8.5rem;
+  }
+}
+
+.research-queue-card {
+  border-color: #ddd6fe;
+}
+
+.research-queue-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.research-queue-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.research-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.research-queue-item {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.research-queue-item.is-active {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgb(167 139 250 / 0.25);
+}
+
+.research-queue-item-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.65rem 0.85rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.research-queue-item-main:hover {
+  background: #f5f3ff;
+}
+
+.research-queue-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+}
+
+.research-queue-status.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.research-queue-status.running {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.research-queue-query {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #1a1c1e;
+}
+
+.research-queue-meta {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.research-queue-cancel {
+  align-self: center;
+  margin-right: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.research-queue-cancel:hover {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.research-queue-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.research-queue-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  line-height: 1.35;
+}
+
+.research-queue-status.failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.research-failed-card {
+  border-color: #fecaca;
+}
+
+.research-queue-item.failed {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.research-failed-banner {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.research-failed-title {
+  margin: 0;
+  font-weight: 600;
+  color: #b91c1c;
+  font-size: 1rem;
+}
+
+.research-failed-message {
+  margin: 0.35rem 0 0;
+  color: #7f1d1d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.research-history-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.research-history-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.research-history-item-head {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.75rem 0.9rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.research-history-item-head:hover {
+  background: #f5f3ff;
+}
+
+.research-history-query {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #1a1c1e;
+}
+
+.research-history-meta {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.research-history-preview {
+  font-size: 0.85rem;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.research-history-body {
+  padding: 0 0.9rem 0.9rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.research-history-content {
+  margin: 0.75rem 0 0;
+  max-height: 420px;
+  overflow: auto;
+  word-break: break-word;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
 .research-shell .follow-up-item p {
   color: #1a1c1e;
+}
+
+/* —— App nav rail (shared across light routes) —— */
+
+.app-shell-with-rail {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.app-shell-with-rail-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-nav-rail {
+  --app-nav-rail-width: 3.5rem;
+  --app-nav-expanded-width: 15.5rem;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  flex-shrink: 0;
+  width: var(--app-nav-rail-width);
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  z-index: 45;
+  transition: width 0.2s ease;
+}
+
+.app-nav-rail--placeholder {
+  pointer-events: none;
+}
+
+.app-nav-rail.is-expanded {
+  width: var(--app-nav-expanded-width);
+}
+
+.app-nav-rail.is-research.is-expanded,
+.app-nav-rail.is-ppt.is-expanded {
+  --app-nav-expanded-width: 16.5rem;
+}
+
+.app-nav-rail-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.85rem 0 1rem;
+  height: 100%;
+}
+
+.app-nav-rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #111827;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.app-nav-rail-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.app-nav-brand-btn {
+  margin-bottom: 0.35rem;
+}
+
+.app-nav-brand-logo {
+  display: block;
+}
+
+.app-nav-panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--app-nav-expanded-width);
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-nav-research-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.app-nav-panel-scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+.app-nav-backdrop {
+  display: none;
+}
+
+.app-nav-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0.5rem;
+}
+
+.app-nav-panel-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.app-nav-panel-brand:hover {
+  color: #374151;
+}
+
+.app-nav-panel-brand-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-nav-icon-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.app-nav-icon-btn:hover {
+  color: #374151;
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.app-nav-panel-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.5rem 1rem;
+}
+
+.app-nav-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #374151;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.app-nav-panel-item:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.app-nav-panel-item-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #111827;
+}
+
+.app-nav-panel-item-label {
+  white-space: nowrap;
+}
+
+.light-route-shell.route-bg--home .app-nav-rail,
+.light-route-shell.route-bg--ppt .app-nav-rail,
+.light-route-shell.route-bg--research .app-nav-rail {
+  background: rgb(255 255 255 / 0.92);
+  backdrop-filter: blur(8px);
+}
+
+/* —— Research app layout + OWUI-style sidebar —— */
+
+.research-app-layout {
+  min-height: 100vh;
+  width: 100%;
+  background: #f9fafb;
+}
+
+.research-app-layout > main.research-shell,
+.research-app-layout > main.research-shell.research-shell--form {
+  max-width: none;
+  margin: 0;
+  width: 100%;
+}
+
+.research-sidebar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  text-decoration: none;
+  color: #1f2937;
+}
+
+.research-sidebar-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.research-sidebar-brand-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.research-sidebar-new-chat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 0.75rem 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #1f2937;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.research-sidebar-new-chat:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.research-sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0.5rem 1rem;
+  scrollbar-width: thin;
+}
+
+.research-sidebar-section + .research-sidebar-section {
+  margin-top: 0.75rem;
+}
+
+.research-sidebar-section-title {
+  margin: 0 0 0.35rem;
+  padding: 0 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.research-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.research-sidebar-empty-item {
+  padding: 0.35rem 0.5rem;
+}
+
+.research-sidebar-empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.research-sidebar-chat {
+  display: flex;
+  align-items: stretch;
+  border-radius: 0.625rem;
+  overflow: hidden;
+}
+
+.research-sidebar-chat.is-active {
+  background: #ede9fe;
+}
+
+.research-sidebar-chat-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.5rem 0.55rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: #1f2937;
+}
+
+.research-sidebar-chat-main:hover {
+  background: rgb(0 0 0 / 0.03);
+}
+
+.research-sidebar-chat.is-active .research-sidebar-chat-main:hover {
+  background: transparent;
+}
+
+.research-sidebar-chat-title {
+  width: 100%;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.research-sidebar-chat-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.research-sidebar-badge {
+  display: inline-flex;
+  padding: 0.05rem 0.35rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.research-sidebar-badge.pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.research-sidebar-badge.running {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.research-sidebar-badge.failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.research-sidebar-chat-action {
+  flex-shrink: 0;
+  width: 1.75rem;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.research-sidebar-chat:hover .research-sidebar-chat-action,
+.research-sidebar-chat.is-active .research-sidebar-chat-action {
+  opacity: 1;
+}
+
+.research-sidebar-chat-action:hover {
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .app-nav-rail.is-expanded {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    box-shadow: 4px 0 24px rgb(0 0 0 / 0.12);
+  }
+
+  .app-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    border: none;
+    padding: 0;
+    background: rgb(0 0 0 / 0.25);
+    cursor: pointer;
+  }
+}
+
+@media (min-width: 769px) {
+  .app-nav-backdrop {
+    display: none !important;
+  }
+}
+
+/* Route background: override solid panels defined above */
+body:has(.light-route-shell.route-bg--research),
+body:has(.light-route-shell.route-bg--home),
+body:has(.light-route-shell.route-bg--ppt) {
+  background: var(--route-bg-fallback);
+}
+
+.light-route-shell.route-bg--research .research-app-layout,
+.light-route-shell.route-bg--research .research-shell,
+.light-route-shell.route-bg--research main.research-shell--form,
+.light-route-shell.route-bg--research .home-page,
+.light-route-shell.route-bg--home .home-page,
+.light-route-shell.route-bg--ppt .research-app-layout,
+.light-route-shell.route-bg--ppt .ppt-app-layout,
+.light-route-shell.route-bg--ppt .research-shell,
+.light-route-shell.route-bg--ppt main.research-shell--form,
+.light-route-shell.route-bg--ppt .home-page,
+.light-route-shell.route-bg--ppt .ppt-workflow-shell {
+  background: transparent;
+}
+
+.light-route-shell.route-bg--research .app-nav-rail {
+  background: rgba(249, 250, 251, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.light-route-shell.route-bg--ppt .ppt-outline-workspace {
+  background: rgba(243, 244, 246, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+/* —— PPT workflow (aligned with research light theme) —— */
+
+.ppt-workflow-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* —— PPT outline three-column workspace —— */
+
+.ppt-outline-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  background: #f3f4f6;
+}
+
+.ppt-outline-workspace-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.ppt-outline-back-btn {
+  justify-self: start;
+  border: none;
+  background: transparent;
+  color: #374151;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.ppt-outline-back-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.ppt-outline-workspace-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1c1e;
+  text-align: center;
+}
+
+.ppt-outline-header-spacer {
+  justify-self: end;
+  width: 4rem;
+}
+
+.ppt-outline-error {
+  margin: 0 1.25rem;
+  flex-shrink: 0;
+}
+
+.ppt-outline-columns {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(200px, 260px);
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 5.5rem;
+}
+
+.ppt-outline-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+}
+
+.ppt-outline-col--content {
+  background: #f9fafb;
+  border-right: none;
+}
+
+.ppt-outline-col--notes {
+  border-right: none;
+  border-left: 1px solid #e5e7eb;
+}
+
+.ppt-outline-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  flex-shrink: 0;
+}
+
+.ppt-outline-col-head h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1a1c1e;
+}
+
+.ppt-outline-panel {
+  margin-bottom: 1rem;
+}
+
+.ppt-outline-panel-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ppt-outline-title-input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: #fff;
+  color: #1a1c1e;
+}
+
+.ppt-outline-text-amount {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.ppt-outline-text-amount-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0.35rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.ppt-outline-text-amount-btn.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ppt-outline-text-amount-label {
+  font-weight: 600;
+}
+
+.ppt-outline-text-amount-hint {
+  font-size: 0.6875rem;
+}
+
+.ppt-outline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ppt-outline-field textarea,
+.ppt-outline-field select,
+.ppt-outline-notes-field textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  resize: vertical;
+  min-height: 4rem;
+  background: #fff;
+  color: #1a1c1e;
+}
+
+.ppt-outline-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.ppt-outline-secondary-action {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ppt-outline-secondary-action:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.ppt-outline-view-toggle {
+  display: inline-flex;
+  padding: 0.2rem;
+  background: #e5e7eb;
+  border-radius: 0.55rem;
+  gap: 0.15rem;
+}
+
+.ppt-outline-view-toggle button {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.45rem;
+  cursor: pointer;
+}
+
+.ppt-outline-view-toggle button.is-active {
+  background: #fff;
+  color: #1a1c1e;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ppt-outline-content-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ppt-outline-free-text {
+  flex: 1;
+  min-height: 12rem;
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  padding: 1rem 1.1rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  resize: none;
+  background: #fff;
+  color: #1a1c1e;
+}
+
+.ppt-outline-activity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.65rem;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
+
+.ppt-outline-activity--ppt {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.ppt-outline-activity-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #7c3aed;
+  flex-shrink: 0;
+  animation: ppt-activity-pulse 1.4s ease-in-out infinite;
+}
+
+.ppt-outline-activity--ppt .ppt-outline-activity-dot {
+  background: #2563eb;
+}
+
+.ppt-outline-activity-message {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #5b21b6;
+}
+
+.ppt-outline-activity--ppt .ppt-outline-activity-message {
+  color: #1d4ed8;
+}
+
+.ppt-outline-activity-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+@keyframes ppt-activity-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+.ppt-outline-content-body--streaming {
+  position: relative;
+}
+
+.ppt-outline-free-text-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ppt-outline-free-text-wrap.is-streaming .ppt-outline-free-text {
+  padding-bottom: 1.75rem;
+}
+
+.ppt-outline-stream-caret {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  color: #7c3aed;
+  pointer-events: none;
+  animation: ppt-caret-blink 1s step-end infinite;
+}
+
+@keyframes ppt-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.ppt-outline-free-text--streaming {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+  animation: ppt-stream-border 2s ease-in-out infinite;
+}
+
+@keyframes ppt-stream-border {
+  0%,
+  100% {
+    border-color: #c4b5fd;
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+  50% {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.12);
+  }
+}
+
+.ppt-progress-title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.ppt-progress-spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.35rem;
+  border: 2px solid #e5e7eb;
+  border-top-color: #7c3aed;
+  border-radius: 999px;
+  flex-shrink: 0;
+  animation: ppt-spin 0.75s linear infinite;
+}
+
+@keyframes ppt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ppt-outline-col--content .ppt-outline-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ppt-outline-tips {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.ppt-outline-tips h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.ppt-outline-tips p {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.ppt-outline-tips p:last-child {
+  margin-bottom: 0;
+}
+
+.ppt-outline-home-link {
+  display: inline-block;
+  margin-top: auto;
+  padding-top: 1rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.ppt-outline-home-link:hover {
+  color: #1a1c1e;
+}
+
+.ppt-outline-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: min(720px, calc(100vw - 2rem));
+  padding: 0.65rem 0.85rem 0.65rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08),
+    0 12px 24px -4px rgba(0, 0, 0, 0.1);
+}
+
+.ppt-outline-dock-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.ppt-outline-dock-icon {
+  color: #7c3aed;
+}
+
+.ppt-outline-dock-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.ppt-outline-dock-step {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  background: #fff;
+  color: #374151;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ppt-outline-dock-step:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.ppt-outline-dock-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a1c1e;
+  min-width: 6.5rem;
+  text-align: center;
+}
+
+.ppt-outline-dock-generate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.35rem;
+  border: none;
+  border-radius: 9999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ppt-outline-dock-generate:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.ppt-outline-dock-generate:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.ppt-outline-result {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.85rem;
+}
+
+.ppt-outline-result--success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.ppt-outline-result--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.ppt-outline-result-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ppt-outline-result-title {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ppt-outline-result-detail {
+  margin: 0 0 0.65rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.ppt-outline-result-issues {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.ppt-outline-result-dismiss {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.ppt-outline-result-dismiss:hover {
+  background: rgb(0 0 0 / 0.06);
+  color: #374151;
+}
+
+.ppt-history-view {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.ppt-history-view-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ppt-history-view-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.ppt-history-view-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.ppt-history-view-prompt {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.ppt-history-view-outline {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.ppt-history-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+.ppt-outline-progress-overlay {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 6.5rem;
+  z-index: 35;
+  width: min(360px, calc(100vw - 2.5rem));
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.ppt-outline-progress-overlay .card {
+  margin: 0;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08),
+    0 12px 24px -4px rgba(0, 0, 0, 0.1);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ppt-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ppt-eyebrow {
+  margin: 0 0 0.25rem;
+  color: #7c3aed;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ppt-slide-count-badge {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.ppt-progress-card {
+  margin-top: 1rem;
+}
+
+.ppt-outline-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.ppt-outline-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  padding: 1rem;
+}
+
+.ppt-outline-card-header,
+.ppt-section-header,
+.ppt-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ppt-progress-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.ppt-progress-dismiss {
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.ppt-progress-dismiss:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.ppt-bg-toast {
+  top: 3.25rem;
+}
+
+.ppt-bg-toast--success {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.ppt-bg-toast--success a {
+  color: #047857;
+}
+
+.ppt-bg-toast--error {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.ppt-bg-toast--error a {
+  color: #b91c1c;
+}
+
+.ppt-bg-toast-dismiss {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+}
+
+.ppt-bg-toast-dismiss:hover {
+  color: #374151;
+}
+
+.ppt-outline-card-header span,
+.ppt-attempt {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.ppt-outline-card select {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  color: #1a1c1e;
+  padding: 0.45rem 0.65rem;
+}
+
+.ppt-download {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9999px;
+  background: #1a1c1e;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.ppt-download:hover {
+  background: #374151;
+}
+
+.ppt-issues ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.ppt-log {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ppt-log p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* —— Prompt PDF attachments —— */
+
+.prompt-attachment-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.prompt-attachment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.prompt-attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.25rem 0.45rem 0.25rem 0.55rem;
+  border-radius: 9999px;
+  background: #ede9fe;
+  border: 1px solid #ddd6fe;
+  color: #5b21b6;
+  font-size: 0.75rem;
+}
+
+.prompt-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 12rem;
+}
+
+.prompt-attachment-remove {
+  border: none;
+  background: transparent;
+  color: #7c3aed;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+}
+
+.prompt-attachment-remove:hover:not(:disabled) {
+  color: #5b21b6;
+}
+
+.prompt-attachment-error {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+.prompt-attachment-spinner {
+  animation: prompt-attachment-spin 0.8s linear infinite;
+}
+
+@keyframes prompt-attachment-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .ppt-outline-columns {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .ppt-outline-col--settings,
+  .ppt-outline-col--notes {
+    border-right: none;
+    border-left: none;
+    border-bottom: 1px solid #e5e7eb;
+    max-height: 40vh;
+  }
+
+  .ppt-outline-col--notes {
+    border-bottom: none;
+  }
+
+  .ppt-outline-dock {
+    width: calc(100vw - 1.5rem);
+    flex-wrap: wrap;
+    border-radius: 1rem;
+    padding: 0.75rem;
+  }
+
+  .ppt-outline-dock-stepper {
+    order: 3;
+    width: 100%;
+  }
+
+  .ppt-outline-dock-generate {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .ppt-outline-card-header,
+  .ppt-section-header,
+  .ppt-progress-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

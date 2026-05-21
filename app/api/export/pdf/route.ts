@@ -1,9 +1,9 @@
 import {
   exportAttachmentHeaders,
-  markdownToExportHtml,
   pdfExportFilename,
   resolveExportBasename,
 } from '@/export-report';
+import { markdownToExportHtml } from '@/export-report-html';
 import { htmlToPdfBuffer } from '@/pdf-export';
 
 export const runtime = 'nodejs';

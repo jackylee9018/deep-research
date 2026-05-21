@@ -160,6 +160,23 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - **Home** — landing UI styled like Open WebUI; pressing Enter on the prompt opens your Open WebUI instance with the [official `q` URL parameter](https://docs.openwebui.com/features/chat-conversations/chat-features/url-params) (auto-submits the first message).
 - **Deep Research** (`/research`) — iterative research flow with follow-up questions, live progress, and exportable reports.
+- **PPT Agent** (`/ppt`) — generates an editable outline first, then uses LangGraph plus a Python `python-pptx` skill to create and validate a PPTX.
+
+### PPT Agent
+
+Install the Python skill dependency when running outside Docker:
+
+```bash
+python3 -m pip install -r skills/pptx/requirements.txt
+```
+
+Run a local skill check:
+
+```bash
+npm run ppt:skill:check
+```
+
+The skill uses `templates/default.pptx` when present. If that file is missing, it falls back to a generated presentation with the same layout contract defined in `skills/pptx/layout_catalog.json`.
 
 Configure Open WebUI in `.env.local` (change the URL anytime — **no rebuild** needed if you use `OPENWEBUI_URL`):
 

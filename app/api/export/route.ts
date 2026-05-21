@@ -3,9 +3,9 @@ import HTMLtoDOCX from 'html-to-docx';
 import {
   docxExportFilename,
   exportAttachmentHeaders,
-  markdownToExportHtml,
   resolveExportBasename,
 } from '@/export-report';
+import { markdownToExportHtml } from '@/export-report-html';
 
 export const runtime = 'nodejs';
 

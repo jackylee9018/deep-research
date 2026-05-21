@@ -1,7 +1,11 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
 
-import { deepResearch, writeFinalAnswer, writeFinalReport } from './deep-research';
+import {
+  deepResearch,
+  writeFinalAnswer,
+  writeFinalReport,
+} from './deep-research';
 import { filenameFromTitle } from './filename';
 
 const app = express();
@@ -60,17 +64,17 @@ app.post('/api/research', async (req: Request, res: Response) => {
 });
 
 // generate report API
-app.post('/api/generate-report',async(req:Request,res:Response)=>{
-  try{
-    const {query,depth = 3,breadth=3 } = req.body;
-    if(!query){
-      return res.status(400).json({error:'Query is required'});
+app.post('/api/generate-report', async (req: Request, res: Response) => {
+  try {
+    const { query, depth = 3, breadth = 3 } = req.body;
+    if (!query) {
+      return res.status(400).json({ error: 'Query is required' });
     }
-    log('\n Starting research...\n')
-    const {learnings,visitedUrls} = await deepResearch({
+    log('\n Starting research...\n');
+    const { learnings, visitedUrls } = await deepResearch({
       query,
       breadth,
-      depth
+      depth,
     });
     log(`\n\nLearnings:\n\n${learnings.join('\n')}`);
     log(
@@ -90,16 +94,14 @@ app.post('/api/generate-report',async(req:Request,res:Response)=>{
       learnings,
       visitedUrls,
     });
-  }catch(error:unknown){
-    console.error("Error in generate report API:",error)
+  } catch (error: unknown) {
+    console.error('Error in generate report API:', error);
     return res.status(500).json({
-      error:'An error occurred during research',
-      message:error instanceof Error? error.message: String(error),
-    })
+      error: 'An error occurred during research',
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
-})
-
-
+});
 
 // Start the server
 app.listen(port, () => {

@@ -73,7 +73,13 @@ export function buildOpenWebUIChatUrl(
   if (params.model?.trim()) {
     url.searchParams.set('model', params.model.trim());
   } else if (params.models?.length) {
-    url.searchParams.set('models', params.models.map(m => m.trim()).filter(Boolean).join(','));
+    url.searchParams.set(
+      'models',
+      params.models
+        .map(m => m.trim())
+        .filter(Boolean)
+        .join(','),
+    );
   } else {
     const envModel = process.env.NEXT_PUBLIC_OPENWEBUI_MODEL?.trim();
     if (envModel) {
@@ -107,13 +113,18 @@ function isSameAppRedirect(targetUrl: string): boolean {
   try {
     const target = new URL(targetUrl);
     const current = window.location;
-    return target.origin === current.origin && (target.pathname === '/' || target.pathname === current.pathname);
+    return (
+      target.origin === current.origin &&
+      (target.pathname === '/' || target.pathname === current.pathname)
+    );
   } catch {
     return false;
   }
 }
 
-export async function navigateToOpenWebUI(params: OpenWebUIChatParams = {}): Promise<void> {
+export async function navigateToOpenWebUI(
+  params: OpenWebUIChatParams = {},
+): Promise<void> {
   const origin = await resolveOpenWebUIOrigin();
   const url = buildOpenWebUIChatUrl(params, origin);
 

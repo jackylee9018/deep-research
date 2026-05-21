@@ -1,12 +1,18 @@
-import { generateObject } from './ai/generate-object';
 import { compact } from 'lodash-es';
 import pLimit from 'p-limit';
 import { z } from 'zod';
 
+import { generateObject } from './ai/generate-object';
 import { getModel, trimPrompt } from './ai/providers';
 import { normalizeReportMarkdown } from './normalize-report-markdown';
 import { systemPrompt } from './prompt';
+import {
+  buildFinalReportPromptParts,
+  REPORT_MARKDOWN_GUIDELINES,
+  REPORT_MARKDOWN_SCHEMA_HINT,
+} from './report-writing-guidelines';
 import { search, type SearchResponse } from './search';
+import { serpQueriesResponseSchema } from './serp-queries-schema';
 
 function log(...args: any[]) {
   console.log(...args);
@@ -89,19 +95,12 @@ async function generateSerpQueries({
           )}`
         : ''
     }`,
-    schema: z.object({
-      queries: z
-        .array(
-          z.object({
-            query: z.string().describe('The SERP query'),
-            researchGoal: z
-              .string()
-              .describe(
-                'First talk about the goal of the research that this query is meant to accomplish, then go deeper into how to advance the research once the results are found, mention additional research directions. Be as specific as possible, especially for additional research directions.',
-              ),
-          }),
-        )
-        .describe(`List of SERP queries, max of ${numQueries}`),
+    schema: serpQueriesResponseSchema({
+      max: numQueries,
+      listDescription: `List of SERP queries, max of ${numQueries}`,
+      queryFieldDescription: 'The SERP query',
+      researchGoalFieldDescription:
+        'First talk about the goal of the research that this query is meant to accomplish, then go deeper into how to advance the research once the results are found, mention additional research directions. Be as specific as possible, especially for additional research directions.',
     }),
   });
   log(`Created ${res.object.queries.length} queries`, res.object.queries);
@@ -120,8 +119,8 @@ async function processSerpResult({
   numLearnings?: number;
   numFollowUpQuestions?: number;
 }) {
-  const contents = compact(result.data.map(item => item.markdown)).map(content =>
-    trimPrompt(content, 25_000),
+  const contents = compact(result.data.map(item => item.markdown)).map(
+    content => trimPrompt(content, 25_000),
   );
   log(`Ran ${query}, found ${contents.length} contents`);
 
@@ -135,7 +134,9 @@ async function processSerpResult({
         .join('\n')}</contents>`,
     ),
     schema: z.object({
-      learnings: z.array(z.string()).describe(`List of learnings, max of ${numLearnings}`),
+      learnings: z
+        .array(z.string())
+        .describe(`List of learnings, max of ${numLearnings}`),
       followUpQuestions: z
         .array(z.string())
         .describe(
@@ -165,12 +166,16 @@ export async function writeFinalReport({
   const learningsString = learnings
     .map(learning => `<learning>\n${learning}\n</learning>`)
     .join('\n');
+  const { promptSection, learningsSection } = buildFinalReportPromptParts(
+    learningsString,
+    prompt,
+  );
 
   const res = await generateObject({
     model: getModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
-      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as as detailed as possible, aim for 3 or more pages, include ALL the learnings from research. Use GitHub-Flavored Markdown only: ##/### headings, lists, blockquotes, and pipe tables with header row and |---|---| separator for comparisons and numeric data. Never use HTML tags (no <a>, <div>, etc.). Section titles must use ## or ###, not numbered plain text or HTML anchors.\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from previous research:\n\n<learnings>\n${learningsString}\n</learnings>`,
+      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as detailed as possible, aim for 3 or more pages, and include ALL the learnings from research.\n\n${REPORT_MARKDOWN_GUIDELINES}\n\n${promptSection}\n\nHere are all the learnings from previous research:\n\n${learningsSection}`,
     ),
     schema: z.object({
       reportTitle: z
@@ -180,9 +185,7 @@ export async function writeFinalReport({
         ),
       reportMarkdown: z
         .string()
-        .describe(
-          'Final report in GitHub-Flavored Markdown with pipe tables (header + |---|---| row) for data',
-        ),
+        .describe(REPORT_MARKDOWN_SCHEMA_HINT),
     }),
   });
 
@@ -213,7 +216,9 @@ export async function writeFinalAnswer({
     schema: z.object({
       exactAnswer: z
         .string()
-        .describe('The final answer, make it short and concise, just the answer, no other text'),
+        .describe(
+          'The final answer, make it short and concise, just the answer, no other text',
+        ),
     }),
   });
 
@@ -358,7 +363,9 @@ export async function deepResearch({
           const allUrls = [...visitedUrls, ...newUrls];
 
           if (newDepth > 0) {
-            log(`Researching deeper, breadth: ${newBreadth}, depth: ${newDepth}`);
+            log(
+              `Researching deeper, breadth: ${newBreadth}, depth: ${newDepth}`,
+            );
             reportActivity({
               type: 'step',
               step: 'synthesis',

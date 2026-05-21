@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 
+import { getLlmEnvStatus } from '@/ai/providers';
+
+import { resolveAppDisplayName } from '../../lib/app-brand';
+
 export const runtime = 'nodejs';
 
 const DEFAULT_OPENWEBUI_URL = 'https://ai.spit.hk';
@@ -15,8 +19,14 @@ export async function GET() {
       DEFAULT_OPENWEBUI_URL,
   );
 
+  const llm = getLlmEnvStatus();
+
   return NextResponse.json({
     openWebUIUrl,
-    appName: process.env.NEXT_PUBLIC_APP_NAME ?? 'Open Deep Research',
+    appName: resolveAppDisplayName(),
+    webSearchAvailable: Boolean(process.env.TAVILY_API_KEY?.trim()),
+    llmConfigured: llm.configured,
+    llmProvider: llm.provider,
+    llmModelId: llm.modelId,
   });
 }

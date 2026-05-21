@@ -1,11 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 import { HomePlaceholderHeader } from './components/home-placeholder-header';
-import { HomePromptInput } from './components/home-prompt-input';
+import { HomePromptLayout } from './components/home-prompt-layout';
+import { LightRouteShell } from './components/light-route-shell';
+import { PromptInput } from './components/prompt-input';
 import { navigateToOpenWebUI, preloadOpenWebUIOrigin } from './lib/openwebui';
 
 const FEATURES = [
@@ -20,7 +22,7 @@ const FEATURES = [
   },
   {
     id: 'ppt',
-    href: null,
+    href: '/ppt',
     title: '生成 PPT',
     description: '一鍵生成專業簡報',
     iconBg: '#d1fae5',
@@ -79,73 +81,80 @@ export default function HomePage() {
   };
 
   return (
-    <div className="home-page">
-      <div className="home-inner">
-        <div className="home-main-column">
-          <HomePlaceholderHeader />
-
-          <div className="home-prompt-slot">
-            <HomePromptInput
-              value={prompt}
-              onChange={setPrompt}
-              onSubmit={() => void goToOpenWebUI()}
-              onVoiceMode={() => void goToOpenWebUI(undefined, { call: true })}
-              disabled={redirecting}
-              placeholder="今天我能幫您什麼？"
-            />
-          </div>
-
+    <LightRouteShell className="route-bg route-bg--home">
+      <HomePromptLayout
+        header={<HomePlaceholderHeader />}
+        footer={
           <nav className="home-features" aria-label="功能捷徑">
-          {FEATURES.map(feature => {
-            const content = (
-              <>
-                <span
-                  className="home-feature-icon"
-                  style={{ background: feature.iconBg, color: feature.iconColor }}
-                >
-                  <feature.Icon />
-                </span>
-                <span className="home-feature-text">
-                  <span className="home-feature-title">{feature.title}</span>
-                  <span className="home-feature-desc">{feature.description}</span>
-                </span>
-              </>
-            );
+            {FEATURES.map(feature => {
+              const content = (
+                <>
+                  <span
+                    className="home-feature-icon"
+                    style={{
+                      background: feature.iconBg,
+                      color: feature.iconColor,
+                    }}
+                  >
+                    <feature.Icon />
+                  </span>
+                  <span className="home-feature-text">
+                    <span className="home-feature-title">{feature.title}</span>
+                    <span className="home-feature-desc">
+                      {feature.description}
+                    </span>
+                  </span>
+                </>
+              );
 
-            if (feature.href) {
+              if (feature.href) {
+                return (
+                  <Link
+                    key={feature.id}
+                    href={feature.href}
+                    className="home-feature-card"
+                    onClick={e => {
+                      if (feature.id === 'deep-research' && prompt.trim()) {
+                        e.preventDefault();
+                        goToResearch();
+                      } else if (feature.id === 'ppt' && prompt.trim()) {
+                        e.preventDefault();
+                        router.push(
+                          `/ppt?q=${encodeURIComponent(prompt.trim())}`,
+                        );
+                      }
+                    }}
+                  >
+                    {content}
+                  </Link>
+                );
+              }
+
               return (
-                <Link
+                <button
                   key={feature.id}
-                  href={feature.href}
-                  className="home-feature-card"
-                  onClick={e => {
-                    if (prompt.trim()) {
-                      e.preventDefault();
-                      goToResearch();
-                    }
-                  }}
+                  type="button"
+                  className="home-feature-card home-feature-card--soon"
+                  title="即將推出"
+                  disabled
                 >
                   {content}
-                </Link>
+                </button>
               );
-            }
-
-            return (
-              <button
-                key={feature.id}
-                type="button"
-                className="home-feature-card home-feature-card--soon"
-                title="即將推出"
-                disabled
-              >
-                {content}
-              </button>
-            );
-          })}
+            })}
           </nav>
-        </div>
-      </div>
-    </div>
+        }
+      >
+        <PromptInput
+          value={prompt}
+          onChange={setPrompt}
+          onSubmit={() => void goToOpenWebUI()}
+          onVoiceMode={() => void goToOpenWebUI(undefined, { call: true })}
+          disabled={redirecting}
+          placeholder="今天我能幫您什麼？"
+        />
+      </HomePromptLayout>
+    </LightRouteShell>
   );
 }
 
@@ -153,7 +162,12 @@ function SearchIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-      <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M20 20l-3-3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -161,8 +175,21 @@ function SearchIcon() {
 function PresentationIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="4" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" />
-      <path d="M8 20h8M12 16v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M8 20h8M12 16v4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -176,7 +203,12 @@ function DocumentIcon() {
         strokeWidth="2"
         strokeLinejoin="round"
       />
-      <path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M14 2v6h6M8 13h8M8 17h5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -184,8 +216,21 @@ function DocumentIcon() {
 function CalendarIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
-      <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="16"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M3 10h18M8 3v4M16 3v4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

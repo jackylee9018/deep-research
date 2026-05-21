@@ -1,0 +1,31 @@
+{
+  "title": {
+    "templateLayoutIndex": 0,
+    "maxTitleChars": 60,
+    "maxSubtitleChars": 120
+  },
+  "section": {
+    "templateLayoutIndex": 2,
+    "maxTitleChars": 80,
+    "maxSubtitleChars": 140
+  },
+  "bullets": {
+    "templateLayoutIndex": 1,
+    "maxTitleChars": 70,
+    "maxBullets": 5,
+    "maxBulletChars": 95
+  },
+  "two_column": {
+    "templateLayoutIndex": 3,
+    "maxTitleChars": 70,
+    "maxBullets": 4,
+    "maxBulletChars": 80
+  },
+  "closing": {
+    "templateLayoutIndex": 4,
+    "maxTitleChars": 70,
+    "maxSubtitleChars": 140,
+    "maxBullets": 3,
+    "maxBulletChars": 90
+  }
+}

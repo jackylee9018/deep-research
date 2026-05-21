@@ -1,12 +1,9 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
-import type { JSONValue } from 'ai';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown, { type Components } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import type { JSONValue } from 'ai';
 
 import {
   docxExportFilename,
@@ -16,20 +13,24 @@ import {
 import { normalizeReportMarkdown } from '@/normalize-report-markdown';
 import type { FollowUpEntry } from '@/research-query';
 
+import { ResearchFormPanel } from '../components/research-form-panel';
+import { ResearchShellLayout } from '../components/research-shell-layout';
+import { useResearchJobs } from '../components/research-jobs-provider';
+import { ResearchMarkdownContent } from '../components/research-markdown';
 import {
   downloadBlob,
   downloadTextFile,
   fetchDocxExport,
   fetchPdfExport,
 } from '../lib/client-export';
-
-const reportMarkdownComponents: Components = {
-  table: ({ children, ...props }) => (
-    <div className="table-wrap">
-      <table {...props}>{children}</table>
-    </div>
-  ),
-};
+import type { PromptAttachment } from '../lib/prompt-attachments';
+import {
+  DEFAULT_RESEARCH_INTENSITY,
+  inferResearchIntensity,
+  researchIntensityParams,
+  type ResearchIntensity,
+} from '../lib/research-intensity';
+import { RESEARCH_MODEL_LABELS } from '../lib/research-models';
 
 type Phase = 'research' | 'writing';
 type Mode = 'report' | 'answer';
@@ -58,10 +59,24 @@ type StreamDataPart =
   | { type: 'sources'; urls: string[] }
   | { type: 'answer'; answer: string }
   | { type: 'learnings'; count: number; urlsCount: number }
-  | { type: 'step'; step: ResearchStepId; status: Exclude<StepStatus, 'pending'>; detail?: string }
-  | { type: 'log'; icon: 'search' | 'brain' | 'link' | 'check'; message: string }
+  | {
+      type: 'step';
+      step: ResearchStepId;
+      status: Exclude<StepStatus, 'pending'>;
+      detail?: string;
+    }
+  | {
+      type: 'log';
+      icon: 'search' | 'brain' | 'link' | 'check';
+      message: string;
+    }
   | { type: 'query-plan'; queries: string[] }
-  | { type: 'search-result'; query: string; urls: string[]; resultCount: number }
+  | {
+      type: 'search-result';
+      query: string;
+      urls: string[];
+      resultCount: number;
+    }
   | {
       type: 'learning-result';
       query: string;
@@ -70,11 +85,11 @@ type StreamDataPart =
     };
 
 const STEP_CONFIG: Array<{ id: ResearchStepId; label: string }> = [
-  { id: 'query-analysis', label: 'Query Analysis' },
-  { id: 'web-search', label: 'Web & Source Search' },
-  { id: 'evaluation-cross-check', label: 'Evaluation & Cross-Check' },
-  { id: 'synthesis', label: 'Synthesis' },
-  { id: 'report-generation', label: 'Report Generation' },
+  { id: 'query-analysis', label: '查詢分析' },
+  { id: 'web-search', label: '搜尋與來源' },
+  { id: 'evaluation-cross-check', label: '評估與交叉驗證' },
+  { id: 'synthesis', label: '綜合整理' },
+  { id: 'report-generation', label: '產出生成' },
 ];
 
 const LOG_ICON: Record<'search' | 'brain' | 'link' | 'check', string> = {
@@ -118,8 +133,16 @@ function sourcesMarkdown(urls: string[]) {
   return `\n\n## Sources\n\n${urls.map(url => `- ${url}`).join('\n')}`;
 }
 
-function TypewriterLine({ text, isActive }: { text: string; isActive: boolean }) {
-  const [visibleLength, setVisibleLength] = useState(isActive ? 0 : text.length);
+function TypewriterLine({
+  text,
+  isActive,
+}: {
+  text: string;
+  isActive: boolean;
+}) {
+  const [visibleLength, setVisibleLength] = useState(
+    isActive ? 0 : text.length,
+  );
 
   useEffect(() => {
     if (!isActive) {
@@ -144,28 +167,64 @@ function TypewriterLine({ text, isActive }: { text: string; isActive: boolean })
 }
 
 export default function ResearchPage() {
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Open Deep Research';
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') ?? '';
 
+  const {
+    activeJob,
+    activeJobId,
+    setActiveJobId,
+    enqueueJob,
+    dismissJob,
+    selectedModel,
+    setSelectedModel,
+    runningCount,
+    pendingCount,
+    history,
+    removeHistoryEntry,
+  } = useResearchJobs();
+
   const [query, setQuery] = useState(initialQuery);
-  const [breadth, setBreadth] = useState(4);
-  const [depth, setDepth] = useState(2);
+  const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
+  const [intensity, setIntensity] = useState<ResearchIntensity>(
+    DEFAULT_RESEARCH_INTENSITY,
+  );
   const [mode, setMode] = useState<Mode>('report');
-  const [step, setStep] = useState<'form' | 'followup' | 'result'>('form');
+  const [step, setStep] = useState<
+    'form' | 'followup' | 'result' | 'history'
+  >('form');
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(
+    null,
+  );
   const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
-  const [followUpAnswers, setFollowUpAnswers] = useState<Record<number, string>>({});
+  const [followUpAnswers, setFollowUpAnswers] = useState<
+    Record<number, string>
+  >({});
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  const [modelLabel, setModelLabel] = useState<string | null>(null);
-  const [exporting, setExporting] = useState<'md' | 'docx' | 'pdf' | null>(null);
+  const [exporting, setExporting] = useState<'md' | 'docx' | 'pdf' | null>(
+    null,
+  );
   const [exportError, setExportError] = useState<string | null>(null);
-  const [expandedStep, setExpandedStep] = useState<ResearchStepId>('query-analysis');
-  const [researchStartedAt, setResearchStartedAt] = useState<number | null>(null);
+  const [expandedStep, setExpandedStep] =
+    useState<ResearchStepId>('query-analysis');
+  const [researchStartedAt, setResearchStartedAt] = useState<number | null>(
+    null,
+  );
   const [nowTick, setNowTick] = useState(Date.now());
   const feedRef = useRef<HTMLDivElement>(null);
+  const syncedActiveJobIdRef = useRef<string | null>(null);
 
-  const [chatId, setChatId] = useState(() => crypto.randomUUID());
+  const messages = activeJob?.messages ?? [];
+  const data = activeJob?.data;
+  const isLoading = activeJob?.status === 'running';
+  const isFailed = activeJob?.status === 'failed';
+  const error = activeJob?.error ? new Error(activeJob.error) : undefined;
+  const viewMode = activeJob?.mode ?? mode;
+  const selectedHistoryEntry = useMemo(
+    () => history.find(entry => entry.id === selectedHistoryId),
+    [history, selectedHistoryId],
+  );
 
   useEffect(() => {
     if (initialQuery) {
@@ -173,26 +232,42 @@ export default function ResearchPage() {
     }
   }, [initialQuery]);
 
+  // 僅在切換檢視的任務時同步表單，避免背景任務 status 更新覆寫使用者的研究強度選擇
   useEffect(() => {
-    void fetch('/api/model')
-      .then(res => res.json())
-      .then(json => {
-        if (typeof json.model === 'string') {
-          const extra =
-            Array.isArray(json.providers) && json.providers.length
-              ? ` · ${json.providers.join(' → ')}`
-              : '';
-          setModelLabel(`${json.model}${extra}`);
-        }
-      })
-      .catch(() => setModelLabel(null));
-  }, []);
+    if (!activeJobId || !activeJob) {
+      syncedActiveJobIdRef.current = null;
+      return;
+    }
+    if (syncedActiveJobIdRef.current === activeJobId) {
+      return;
+    }
+    syncedActiveJobIdRef.current = activeJobId;
+    setQuery(activeJob.query);
+    setIntensity(inferResearchIntensity(activeJob.breadth, activeJob.depth));
+    setMode(activeJob.mode);
+    if (activeJob.status === 'running' || activeJob.status === 'completed') {
+      setResearchStartedAt(activeJob.createdAt);
+    }
+  }, [activeJob, activeJobId]);
 
-  const { messages, data, isLoading, error, append, setMessages, setData } = useChat({
-    id: chatId,
-    api: '/api/research',
-    streamProtocol: 'data',
-  });
+  useEffect(() => {
+    if (!activeJob) {
+      return;
+    }
+    if (activeJob.status === 'running' || activeJob.status === 'completed') {
+      setResearchStartedAt(activeJob.createdAt);
+    }
+  }, [activeJob?.status, activeJobId, activeJob]);
+
+  useEffect(() => {
+    if (step === 'result' && !activeJob) {
+      setStep('form');
+    }
+    if (step === 'history' && !selectedHistoryEntry) {
+      setStep('form');
+      setSelectedHistoryId(null);
+    }
+  }, [step, activeJob, selectedHistoryEntry]);
 
   const phase = latestFromData(data, 'phase');
   const progress = latestFromData(data, 'progress');
@@ -210,11 +285,19 @@ export default function ResearchPage() {
     [parsedData],
   );
   const stepEvents = useMemo(
-    () => parsedData.filter((part): part is Extract<StreamDataPart, { type: 'step' }> => part.type === 'step'),
+    () =>
+      parsedData.filter(
+        (part): part is Extract<StreamDataPart, { type: 'step' }> =>
+          part.type === 'step',
+      ),
     [parsedData],
   );
   const logEvents = useMemo(
-    () => parsedData.filter((part): part is Extract<StreamDataPart, { type: 'log' }> => part.type === 'log'),
+    () =>
+      parsedData.filter(
+        (part): part is Extract<StreamDataPart, { type: 'log' }> =>
+          part.type === 'log',
+      ),
     [parsedData],
   );
   const searchResultEvents = useMemo(
@@ -234,7 +317,10 @@ export default function ResearchPage() {
     [parsedData],
   );
   const progressEvents = useMemo(
-    () => parsedData.filter((part): part is ProgressData => part.type === 'progress'),
+    () =>
+      parsedData.filter(
+        (part): part is ProgressData => part.type === 'progress',
+      ),
     [parsedData],
   );
   const stepStatus = useMemo(() => {
@@ -248,24 +334,39 @@ export default function ResearchPage() {
     for (const event of stepEvents) {
       initial[event.step] = event.status;
     }
-    if (phase?.phase === 'writing' && initial['report-generation'] === 'pending') {
+    if (
+      phase?.phase === 'writing' &&
+      initial['report-generation'] === 'pending'
+    ) {
       initial['report-generation'] = 'active';
     }
     return initial;
   }, [phase?.phase, stepEvents]);
-  const stepPercent = useMemo(() => {
-    const doneCount = STEP_CONFIG.filter(step => stepStatus[step.id] === 'done').length;
-    return Math.round((doneCount / STEP_CONFIG.length) * 100);
-  }, [stepStatus]);
+  const stepsDoneCount = useMemo(
+    () => STEP_CONFIG.filter(step => stepStatus[step.id] === 'done').length,
+    [stepStatus],
+  );
   const etaSeconds = useMemo(() => {
-    if (!researchStartedAt || !progress?.totalQueries || progress.completedQueries <= 0) {
+    if (
+      !researchStartedAt ||
+      !progress?.totalQueries ||
+      progress.completedQueries <= 0
+    ) {
       return null;
     }
     const elapsed = Math.max(1, (nowTick - researchStartedAt) / 1000);
     const avgPerQuery = elapsed / progress.completedQueries;
-    const remainingQueries = Math.max(0, progress.totalQueries - progress.completedQueries);
+    const remainingQueries = Math.max(
+      0,
+      progress.totalQueries - progress.completedQueries,
+    );
     return Math.max(0, Math.round(avgPerQuery * remainingQueries));
-  }, [nowTick, progress?.completedQueries, progress?.totalQueries, researchStartedAt]);
+  }, [
+    nowTick,
+    progress?.completedQueries,
+    progress?.totalQueries,
+    researchStartedAt,
+  ]);
 
   const reportMarkdown = useMemo(() => {
     const assistant = [...messages].reverse().find(m => m.role === 'assistant');
@@ -275,14 +376,17 @@ export default function ResearchPage() {
 
   const fullMarkdown = reportMarkdown + sourcesMarkdown(sources?.urls ?? []);
 
-  const exportContent = mode === 'answer' ? (answerPart?.answer ?? '') : fullMarkdown;
+  const exportContent =
+    viewMode === 'answer' ? (answerPart?.answer ?? '') : fullMarkdown;
   const exportFallbackTitle = query.trim() || 'research';
 
   const progressPercent = useMemo(() => {
     if (!progress?.totalQueries) {
       return 0;
     }
-    return Math.round((progress.completedQueries / progress.totalQueries) * 100);
+    return Math.round(
+      (progress.completedQueries / progress.totalQueries) * 100,
+    );
   }, [progress]);
 
   const phaseLabel =
@@ -309,17 +413,44 @@ export default function ResearchPage() {
   }, [logEvents]);
 
   const resetSession = useCallback(() => {
-    setChatId(crypto.randomUUID());
-    setMessages([]);
-    setData(undefined);
+    syncedActiveJobIdRef.current = null;
+    setActiveJobId(null);
+    setSelectedHistoryId(null);
     setStep('form');
+    setMode('report');
+    setIntensity(DEFAULT_RESEARCH_INTENSITY);
+    setAttachments([]);
     setFollowUpQuestions([]);
     setFollowUpAnswers({});
     setFeedbackError(null);
     setExportError(null);
     setExpandedStep('query-analysis');
     setResearchStartedAt(null);
-  }, [setMessages, setData]);
+  }, [setActiveJobId]);
+
+  const sendToBackground = useCallback(() => {
+    syncedActiveJobIdRef.current = null;
+    setActiveJobId(null);
+    setSelectedHistoryId(null);
+    setStep('form');
+    setExportError(null);
+  }, [setActiveJobId]);
+
+  const openJob = useCallback(
+    (jobId: string) => {
+      setSelectedHistoryId(null);
+      setActiveJobId(jobId);
+      setStep('result');
+    },
+    [setActiveJobId],
+  );
+
+  const openHistory = useCallback((entryId: string) => {
+    setActiveJobId(null);
+    syncedActiveJobIdRef.current = null;
+    setSelectedHistoryId(entryId);
+    setStep('history');
+  }, [setActiveJobId]);
 
   const loadFollowUp = async () => {
     if (!query.trim()) {
@@ -331,11 +462,13 @@ export default function ResearchPage() {
       const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({ query: query.trim(), model: selectedModel }),
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.message ?? json.error ?? 'Failed to load questions');
+        throw new Error(
+          json.message ?? json.error ?? 'Failed to load questions',
+        );
       }
       setFollowUpQuestions(json.questions ?? []);
       setStep('followup');
@@ -346,35 +479,27 @@ export default function ResearchPage() {
     }
   };
 
-  const startResearch = async (followUp?: FollowUpEntry[]) => {
+  const startResearch = (followUp?: FollowUpEntry[]) => {
     if (!query.trim()) {
       return;
     }
     setStep('result');
-    setMessages([]);
-    setData(undefined);
     setExpandedStep('query-analysis');
     setResearchStartedAt(Date.now());
-    await append(
-      { role: 'user', content: query.trim() },
-      {
-        body: {
-          query: query.trim(),
-          breadth,
-          depth,
-          mode,
-          followUp,
-        },
-      },
-    );
+    const { breadth, depth } = researchIntensityParams(intensity);
+    enqueueJob({
+      query: query.trim(),
+      breadth,
+      depth,
+      mode: 'report',
+      model: selectedModel,
+      followUp,
+      attachments,
+    });
   };
 
   const handleFormNext = async () => {
-    if (mode === 'report') {
-      await loadFollowUp();
-    } else {
-      await startResearch();
-    }
+    await loadFollowUp();
   };
 
   const handleFollowUpSubmit = async (e: React.FormEvent) => {
@@ -383,7 +508,7 @@ export default function ResearchPage() {
       question,
       answer: followUpAnswers[i]?.trim() ?? '',
     }));
-    await startResearch(followUp);
+    startResearch(followUp);
   };
 
   const downloadMarkdown = () => {
@@ -392,7 +517,7 @@ export default function ResearchPage() {
     }
     setExportError(null);
     const filename =
-      mode === 'answer'
+      viewMode === 'answer'
         ? markdownExportFilename(exportContent, `${exportFallbackTitle}-answer`)
         : markdownExportFilename(exportContent, exportFallbackTitle);
     downloadTextFile(exportContent, filename, 'text/markdown;charset=utf-8');
@@ -406,12 +531,14 @@ export default function ResearchPage() {
     setExporting('docx');
     try {
       const filename =
-        mode === 'answer'
+        viewMode === 'answer'
           ? docxExportFilename(exportContent, `${exportFallbackTitle}-answer`)
           : docxExportFilename(exportContent, exportFallbackTitle);
       const blob = await fetchDocxExport(
         exportContent,
-        mode === 'answer' ? `${exportFallbackTitle}-answer` : exportFallbackTitle,
+        viewMode === 'answer'
+          ? `${exportFallbackTitle}-answer`
+          : exportFallbackTitle,
       );
       downloadBlob(blob, filename);
     } catch (e) {
@@ -429,12 +556,14 @@ export default function ResearchPage() {
     setExporting('pdf');
     try {
       const filename =
-        mode === 'answer'
+        viewMode === 'answer'
           ? pdfExportFilename(exportContent, `${exportFallbackTitle}-answer`)
           : pdfExportFilename(exportContent, exportFallbackTitle);
       const blob = await fetchPdfExport(
         exportContent,
-        mode === 'answer' ? `${exportFallbackTitle}-answer` : exportFallbackTitle,
+        viewMode === 'answer'
+          ? `${exportFallbackTitle}-answer`
+          : exportFallbackTitle,
       );
       downloadBlob(blob, filename);
     } catch (e) {
@@ -494,7 +623,8 @@ export default function ResearchPage() {
         <ul className="step-detail-list">
           {learningResultEvents.slice(-6).map((item, idx) => (
             <li key={`${item.query}-${idx}`}>
-              {item.query}：提取 {item.learningsCount} 條事實，生成 {item.followUpCount} 個追問
+              {item.query}：提取 {item.learningsCount} 條事實，生成{' '}
+              {item.followUpCount} 個追問
             </li>
           ))}
         </ul>
@@ -515,7 +645,8 @@ export default function ResearchPage() {
     if (phase?.phase === 'writing') {
       return (
         <p className="step-detail-empty">
-          已進入生成階段{mode === 'answer' ? '（答案）' : '（報告）'}，內容會持續即時更新。
+          已進入生成階段{viewMode === 'answer' ? '（答案）' : '（報告）'}
+          ，內容會持續即時更新。
         </p>
       );
     }
@@ -524,110 +655,76 @@ export default function ResearchPage() {
   };
 
   return (
-    <main className="research-shell">
-      <header className="research-shell-header">
-        <div className="research-header-brand">
-          <Link href="/" className="home-logo research-header-logo" aria-label="返回首頁">
-            OI
-          </Link>
-          <div>
-            <h1 className="research-title">{appName}</h1>
-            <p className="research-subtitle">
-              迭代式深度研究 — 輸入主題後自動搜尋、分析並產出報告
-              {modelLabel ? (
-                <>
-                  <br />
-                  <span className="research-model-label">模型：{modelLabel}</span>
-                </>
-              ) : null}
-            </p>
+    <ResearchShellLayout
+      activeJobId={activeJobId}
+      selectedHistoryId={selectedHistoryId}
+      onNewResearch={resetSession}
+      onSelectJob={openJob}
+      onSelectHistory={openHistory}
+    >
+      <main
+        className={
+          step === 'form'
+            ? 'research-shell research-shell--form'
+            : 'research-shell'
+        }
+      >
+      {step !== 'form' && (
+        <header className="research-shell-header">
+          <div className="research-header-brand">
+            <Link
+              href="/"
+              className="home-logo research-header-logo"
+              aria-label="返回首頁"
+            >
+              OI
+            </Link>
+            <div>
+              <h1 className="research-title">Deep Research</h1>
+              <p className="research-subtitle">
+                {query.trim() || '深度研究進行中'}
+                <br />
+                <span className="research-model-label">
+                  模型：{RESEARCH_MODEL_LABELS[selectedModel]}
+                  {(runningCount > 0 || pendingCount > 0) &&
+                    ` · ${runningCount + pendingCount} 個任務進行中`}
+                </span>
+              </p>
+            </div>
           </div>
-        </div>
-        <Link href="/" className="research-back-link">
-          ← 返回首頁
-        </Link>
-      </header>
+          <Link href="/" className="research-back-link">
+            ← 返回首頁
+          </Link>
+        </header>
+      )}
 
-      {(error || feedbackError || exportError) && (
-        <div className="error-banner">{error?.message ?? feedbackError ?? exportError}</div>
+      {(feedbackError || exportError || (error && !isFailed)) && (
+        <div className="error-banner">
+          {feedbackError ??
+            exportError ??
+            (error && !isFailed ? error.message : null)}
+        </div>
       )}
 
       {step === 'form' && (
-        <section className="card">
-          <label htmlFor="query">研究主題</label>
-          <textarea
-            id="query"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="例如：2025 年固態電池商業化進展與主要玩家"
-            rows={3}
-          />
-
-          <div className="row" style={{ marginTop: '1rem' }}>
-            <div>
-              <label htmlFor="breadth">廣度 (breadth)</label>
-              <input
-                id="breadth"
-                type="number"
-                min={1}
-                max={10}
-                value={breadth}
-                onChange={e => setBreadth(Number(e.target.value) || 4)}
-              />
-            </div>
-            <div>
-              <label htmlFor="depth">深度 (depth)</label>
-              <input
-                id="depth"
-                type="number"
-                min={1}
-                max={5}
-                value={depth}
-                onChange={e => setDepth(Number(e.target.value) || 2)}
-              />
-            </div>
-          </div>
-
-          <label style={{ marginTop: '1rem' }}>輸出模式</label>
-          <div className="mode-toggle">
-            <button
-              type="button"
-              className={mode === 'report' ? 'active' : ''}
-              onClick={() => setMode('report')}
-            >
-              長篇報告
-            </button>
-            <button
-              type="button"
-              className={mode === 'answer' ? 'active' : ''}
-              onClick={() => setMode('answer')}
-            >
-              簡短答案
-            </button>
-          </div>
-
-          <div className="actions">
-            <button
-              type="button"
-              className="primary"
-              disabled={!query.trim() || loadingFeedback}
-              onClick={() => void handleFormNext()}
-            >
-              {loadingFeedback
-                ? '產生追問中…'
-                : mode === 'report'
-                  ? '下一步：釐清需求'
-                  : '開始研究'}
-            </button>
-          </div>
-        </section>
+        <ResearchFormPanel
+          query={query}
+          onQueryChange={setQuery}
+          intensity={intensity}
+          onIntensityChange={setIntensity}
+          model={selectedModel}
+          onModelChange={setSelectedModel}
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
+          onSubmit={() => void handleFormNext()}
+          loading={loadingFeedback}
+          disabled={isLoading}
+        />
       )}
 
       {step === 'followup' && (
         <section className="card">
-          <p className="research-hint">
-            回答以下問題以精準研究方向（可留空）
-          </p>
+          <p className="research-hint">回答以下問題以精準研究方向（可留空）</p>
           <form onSubmit={e => void handleFollowUpSubmit(e)}>
             {followUpQuestions.map((question, i) => (
               <div key={i} className="follow-up-item">
@@ -635,14 +732,21 @@ export default function ResearchPage() {
                 <textarea
                   value={followUpAnswers[i] ?? ''}
                   onChange={e =>
-                    setFollowUpAnswers(prev => ({ ...prev, [i]: e.target.value }))
+                    setFollowUpAnswers(prev => ({
+                      ...prev,
+                      [i]: e.target.value,
+                    }))
                   }
                   rows={2}
                 />
               </div>
             ))}
             <div className="actions">
-              <button type="button" className="secondary" onClick={() => setStep('form')}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setStep('form')}
+              >
                 返回
               </button>
               <button type="submit" className="primary" disabled={isLoading}>
@@ -653,15 +757,111 @@ export default function ResearchPage() {
         </section>
       )}
 
-      {step === 'result' && (
+      {step === 'history' && selectedHistoryEntry && (
+        <section className="card report-body">
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>
+            {selectedHistoryEntry.query}
+          </h2>
+          <p className="research-hint" style={{ marginTop: 0 }}>
+            {new Date(selectedHistoryEntry.completedAt).toLocaleString('zh-TW')}{' '}
+            · {RESEARCH_MODEL_LABELS[selectedHistoryEntry.model]} ·{' '}
+            {selectedHistoryEntry.mode === 'report' ? '報告' : '答案'}
+          </p>
+          <ResearchMarkdownContent
+            content={selectedHistoryEntry.content}
+            mode={selectedHistoryEntry.mode}
+          />
+          <div className="actions" style={{ marginTop: '1rem' }}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                void navigator.clipboard.writeText(selectedHistoryEntry.content)
+              }
+            >
+              複製
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                downloadTextFile(
+                  selectedHistoryEntry.content,
+                  markdownExportFilename(
+                    selectedHistoryEntry.content,
+                    selectedHistoryEntry.query,
+                  ),
+                  'text/markdown;charset=utf-8',
+                )
+              }
+            >
+              匯出 Markdown
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                removeHistoryEntry(selectedHistoryEntry.id);
+                setSelectedHistoryId(null);
+                setStep('form');
+              }}
+            >
+              刪除紀錄
+            </button>
+            <button type="button" className="primary" onClick={resetSession}>
+              新建研究
+            </button>
+          </div>
+        </section>
+      )}
+
+      {step === 'result' && activeJob && (
         <>
+          {isFailed && (
+            <section className="card research-failed-banner" role="alert">
+              <p className="research-failed-title">研究未完成</p>
+              <p className="research-failed-message">
+                {activeJob.error ?? '發生未知錯誤'}
+              </p>
+              <div className="actions" style={{ marginTop: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setStep('form')}
+                >
+                  返回表單
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    dismissJob(activeJob.id);
+                    setStep('form');
+                  }}
+                >
+                  清除任務
+                </button>
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={resetSession}
+                >
+                  新研究
+                </button>
+              </div>
+            </section>
+          )}
+
           <section className="card">
-            <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>研究流程</h2>
-            <div className="stepper-progress">
-              <div className="stepper-progress-fill" style={{ width: `${stepPercent}%` }} />
-            </div>
-            <p className="progress-detail" style={{ marginTop: '0.5rem' }}>
-              流程完成度 {stepPercent}% {etaSeconds !== null ? ` · 預計還需 ${etaSeconds} 秒` : ''}
+            <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>研究階段</h2>
+            <p
+              className="research-hint"
+              style={{ marginTop: 0, marginBottom: '0.75rem' }}
+            >
+              階段狀態僅供參考；整體進度請見下方「研究進度」。
+            </p>
+            <p className="progress-detail" style={{ marginTop: 0 }}>
+              已完成 {stepsDoneCount}/{STEP_CONFIG.length} 個階段
             </p>
             <div className="stepper">
               {STEP_CONFIG.map(stepItem => {
@@ -679,11 +879,13 @@ export default function ResearchPage() {
                 );
               })}
             </div>
-            <div className="step-detail-panel">{renderStepDetails(expandedStep)}</div>
+            <div className="step-detail-panel">
+              {renderStepDetails(expandedStep)}
+            </div>
           </section>
 
           <section className="card thinking-feed">
-            <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Live Thinking Feed</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>即時思考動態</h2>
             <div className="feed-list" ref={feedRef}>
               {logEvents.length === 0 ? (
                 <p className="step-detail-empty">等待研究事件流啟動…</p>
@@ -701,10 +903,13 @@ export default function ResearchPage() {
             </div>
           </section>
 
-          {(isLoading || phaseLabel) && (
+          {(isLoading ||
+            phaseLabel ||
+            (progress && progress.totalQueries > 0)) && (
             <section className="card progress-block">
+              <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>研究進度</h2>
               {phaseLabel && <p className="phase-label">{phaseLabel}</p>}
-              {progress && progress.totalQueries > 0 && (
+              {progress && progress.totalQueries > 0 ? (
                 <>
                   <div className="progress-bar">
                     <div
@@ -713,33 +918,38 @@ export default function ResearchPage() {
                     />
                   </div>
                   <p className="progress-detail">
-                    查詢 {progress.completedQueries}/{progress.totalQueries} · 深度{' '}
-                    {progress.totalDepth - progress.currentDepth}/{progress.totalDepth}
+                    查詢 {progress.completedQueries}/{progress.totalQueries} ·
+                    深度 {progress.totalDepth - progress.currentDepth}/
+                    {progress.totalDepth}
                     {progress.currentQuery ? ` · ${progress.currentQuery}` : ''}
                     {etaSeconds !== null ? ` · 預計還需 ${etaSeconds} 秒` : ''}
                   </p>
                 </>
+              ) : isLoading ? (
+                <p className="research-hint">正在啟動研究…</p>
+              ) : null}
+            </section>
+          )}
+
+          {viewMode === 'answer' && (answerPart || isLoading) && (
+            <section className="card">
+              <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>答案</h2>
+              {answerPart ? (
+                <p className="answer-box">{answerPart.answer}</p>
+              ) : (
+                <p className="research-hint">等待答案內容…</p>
               )}
             </section>
           )}
 
-          {mode === 'answer' && answerPart && (
-            <section className="card">
-              <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>答案</h2>
-              <p className="answer-box">{answerPart.answer}</p>
-            </section>
-          )}
-
-          {mode === 'report' && (reportMarkdown || isLoading) && (
+          {viewMode === 'report' && (reportMarkdown || isLoading) && (
             <section className="card report-body">
               <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>報告</h2>
               {reportMarkdown ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={reportMarkdownComponents}
-                >
-                  {reportMarkdown}
-                </ReactMarkdown>
+                <ResearchMarkdownContent
+                  content={reportMarkdown}
+                  mode="report"
+                />
               ) : (
                 <p className="research-hint">等待報告內容…</p>
               )}
@@ -761,9 +971,25 @@ export default function ResearchPage() {
             </section>
           )}
 
-          {!isLoading && (reportMarkdown || answerPart) && (
+          {(isLoading || activeJob) && (
+            <div className="actions" style={{ marginBottom: '0.5rem' }}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={sendToBackground}
+              >
+                放到背景繼續
+              </button>
+            </div>
+          )}
+
+          {!isLoading && !isFailed && (reportMarkdown || answerPart) && (
             <div className="actions">
-              <button type="button" className="secondary" onClick={() => void copyToClipboard()}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => void copyToClipboard()}
+              >
                 複製
               </button>
               <button
@@ -797,6 +1023,8 @@ export default function ResearchPage() {
           )}
         </>
       )}
+
     </main>
+    </ResearchShellLayout>
   );
 }

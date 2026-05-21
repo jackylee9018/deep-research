@@ -16,7 +16,7 @@ function parseCsvEnv(name: string): string[] | undefined {
 
   const values = raw
     .split(',')
-    .map((value) => value.trim())
+    .map(value => value.trim())
     .filter(Boolean);
 
   return values.length ? values : undefined;
@@ -34,7 +34,9 @@ function parseBooleanEnv(name: string): boolean | undefined {
 }
 
 /** Build OpenRouter `provider` routing from env (see README). */
-export function getOpenRouterProviderRouting(): OpenRouterProviderRouting | undefined {
+export function getOpenRouterProviderRouting():
+  | OpenRouterProviderRouting
+  | undefined {
   const order =
     parseCsvEnv('OPENROUTER_PROVIDER') ?? parseCsvEnv('OPENROUTER_PROVIDERS');
   const only = parseCsvEnv('OPENROUTER_PROVIDER_ONLY');

@@ -50,33 +50,26 @@ function isJsonParseError(error: unknown): boolean {
   );
 }
 
-export async function generateObject<T extends z.ZodTypeAny>(
+function isSchemaMismatchError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error && 'message' in error
+        ? String((error as { message?: unknown }).message)
+        : String(error);
+
+  return (
+    message.includes('did not match schema') ||
+    message.includes('No object generated') ||
+    message.includes('Type validation failed') ||
+    message.includes('Invalid response for tool')
+  );
+}
+
+async function generateObjectFromText<T extends z.ZodTypeAny>(
   options: GenerateObjectOptions<T>,
 ): Promise<GenerateObjectResult<z.infer<T>>> {
   const model = options.model ?? getModel();
-  const base = {
-    model,
-    system: options.system,
-    prompt: options.prompt,
-    schema: options.schema,
-    temperature: options.temperature,
-    abortSignal: options.abortSignal,
-  };
-
-  if (!isOpenRouter()) {
-    return aiGenerateObject(base);
-  }
-
-  for (const mode of ['tool', 'json'] as const) {
-    try {
-      return await aiGenerateObject({ ...base, mode });
-    } catch (error) {
-      if (!isJsonParseError(error)) {
-        throw error;
-      }
-    }
-  }
-
   const textResult = await generateText({
     model,
     system: options.system,
@@ -98,4 +91,41 @@ export async function generateObject<T extends z.ZodTypeAny>(
       throw new Error('toJsonResponse is not available for fallback parsing');
     },
   } as GenerateObjectResult<z.infer<T>>;
+}
+
+export async function generateObject<T extends z.ZodTypeAny>(
+  options: GenerateObjectOptions<T>,
+): Promise<GenerateObjectResult<z.infer<T>>> {
+  const model = options.model ?? getModel();
+  const base = {
+    model,
+    system: options.system,
+    prompt: options.prompt,
+    schema: options.schema,
+    temperature: options.temperature,
+    abortSignal: options.abortSignal,
+  };
+
+  if (!isOpenRouter()) {
+    try {
+      return await aiGenerateObject(base);
+    } catch (error) {
+      if (!isJsonParseError(error) && !isSchemaMismatchError(error)) {
+        throw error;
+      }
+      return generateObjectFromText(options);
+    }
+  }
+
+  for (const mode of ['json', 'tool'] as const) {
+    try {
+      return await aiGenerateObject({ ...base, mode });
+    } catch (error) {
+      if (!isJsonParseError(error) && !isSchemaMismatchError(error)) {
+        continue;
+      }
+    }
+  }
+
+  return generateObjectFromText(options);
 }

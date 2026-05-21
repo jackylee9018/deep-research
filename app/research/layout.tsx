@@ -1,5 +1,20 @@
-import { Suspense } from 'react';
+import type { Metadata } from 'next';
 
-export default function ResearchLayout({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<main className="research-shell" style={{ padding: '2rem' }}>載入中…</main>}>{children}</Suspense>;
+import { RESEARCH_FEATURE_DISPLAY_NAME } from '../lib/app-brand';
+import { LightRouteShell } from '../components/light-route-shell';
+
+export const metadata: Metadata = {
+  title: RESEARCH_FEATURE_DISPLAY_NAME,
+};
+
+export default function ResearchLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <LightRouteShell className="route-bg route-bg--research">
+      {children}
+    </LightRouteShell>
+  );
 }

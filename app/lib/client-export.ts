@@ -7,7 +7,11 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function downloadTextFile(content: string, filename: string, mimeType: string) {
+export function downloadTextFile(
+  content: string,
+  filename: string,
+  mimeType: string,
+) {
   const blob = new Blob(['\uFEFF', content], { type: mimeType });
   downloadBlob(blob, filename);
 }
@@ -38,10 +42,16 @@ async function fetchExportBlob(
   return res.blob();
 }
 
-export function fetchDocxExport(markdown: string, title?: string): Promise<Blob> {
+export function fetchDocxExport(
+  markdown: string,
+  title?: string,
+): Promise<Blob> {
   return fetchExportBlob('/api/export', markdown, title, '匯出 Word 失敗');
 }
 
-export function fetchPdfExport(markdown: string, title?: string): Promise<Blob> {
+export function fetchPdfExport(
+  markdown: string,
+  title?: string,
+): Promise<Blob> {
   return fetchExportBlob('/api/export/pdf', markdown, title, '匯出 PDF 失敗');
 }
