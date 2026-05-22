@@ -16,6 +16,30 @@
 
 ## 新增模板
 
+### API 匯入（建議）
+
+`POST /api/ppt/templates/import`（`multipart/form-data`）
+
+| 欄位 | 必填 | 說明 |
+|------|------|------|
+| `file` | 是 | `.pptx`，單檔，最大 25MB |
+| `id` | 否 | 模板 id（`a-z` 開頭，僅小寫英數與 `_-`）；省略則由檔名自動產生 |
+| `label` | 否 | 顯示名稱 |
+| `description` | 否 | 說明文字 |
+
+會將檔案寫入 `templates/{id}.pptx`，並更新 `registry.json` 的 `layouts`（Python `analyze_template.py` 自動對應母片索引；失敗時退回 `default` 索引）。`exportTheme` 初值沿用 `default`，可再手動編輯 registry。
+
+```bash
+curl -X POST http://localhost:9080/api/ppt/templates/import \
+  -F "file=@/path/to/deck.pptx" \
+  -F "id=my_brand" \
+  -F "label=品牌模板"
+```
+
+匯入後重新整理 `/ppt` 大綱頁，「簡報風格」會從 `GET /api/ppt/templates` 讀到新模板。
+
+### 手動
+
 1. 將 `.pptx` 放入此目錄，版式需含標準 placeholder（Title / Content / Comparison 等）。
 2. 在 `registry.json` 新增一筆，設定 `layouts` 索引與 `exportTheme`（`slideBackground` + `slideBackgroundEnd` 為漸層背景，`accent` 為頂部強調條）。
 3. 重新整理大綱頁：右側「簡報風格」會自動從 `GET /api/ppt/templates` 讀取清單（無需改前端程式碼）。

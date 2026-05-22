@@ -11,10 +11,9 @@ import {
   type OutlineMedia,
   type PptLayoutId,
 } from './schemas';
-import {
-  getCompositionBoxes,
-  resolveOutlineComposition,
-} from './composition/load-catalog';
+import { mergeCompositionBoxes } from './composition/merge-boxes';
+import { resolveOutlineComposition } from './composition/load-catalog';
+import { slideBoxesSchema } from './schemas/slide-boxes';
 import { PPT_LAYOUT_CATALOG, PPT_LAYOUT_IDS } from './schemas/layout-catalog';
 
 function clip(text: string, max: number, fallback = '待補內容'): string {
@@ -129,6 +128,7 @@ export const deckSlideGenerationSchema = z.object({
   value: z.string().optional(),
   context: z.string().optional(),
   headline: z.string().optional(),
+  boxes: slideBoxesSchema.optional(),
 });
 
 export const deckPlanGenerationSchema = z.object({
@@ -355,7 +355,11 @@ export function buildDeckPlan(
     const deckSlide = buildDeckSlide(outlineSlide, generatedSlide);
     const compositionId =
       outlineSlide.compositionId ?? outlineSlide.layoutId;
-    const boxes = getCompositionBoxes(compositionId);
+    const boxes = mergeCompositionBoxes(
+      compositionId,
+      generatedSlide?.boxes,
+      outlineSlide.layoutId,
+    );
     if (!boxes || Object.keys(boxes).length === 0) {
       return deckSlide;
     }

@@ -1,7 +1,11 @@
 import type { OutlineDeck } from '@/ppt/schemas';
 
+import { refineOutlineCompositions } from './composition/refine-outline';
 import { DEFAULT_PPT_OUTLINE_SLIDE_COUNT } from './page-text';
-import { createPlaceholderOutline } from './placeholder-outline';
+import {
+  createPlaceholderOutline,
+  refreshPlaceholderCompositions,
+} from './placeholder-outline';
 import { outlineDeckSchema } from './schemas';
 
 export function freeFormatTextToOutline(
@@ -50,7 +54,7 @@ export function outlineFromFreeFormatText(
     prompt.trim().slice(0, 80) ||
     '簡報大綱';
 
-  return outlineDeckSchema.parse({
+  const parsed = outlineDeckSchema.parse({
     ...merged,
     title,
     slides: merged.slides.map((slide, index) => ({
@@ -58,4 +62,8 @@ export function outlineFromFreeFormatText(
       index: index + 1,
     })),
   });
+
+  return refineOutlineCompositions(
+    refreshPlaceholderCompositions(parsed, prompt),
+  );
 }

@@ -140,13 +140,25 @@
     </boxes>
   </composition>
   <composition id="bullets_photo_right" layoutId="bullets">
-    <label>條列 · 右側留白</label>
-    <description>內容靠左，右側預留圖表或插圖區</description>
-    <whenToUse>搭配截圖、架構圖、產品畫面說明</whenToUse>
-    <fields>title,bullets</fields>
+    <label>條列 · 右側配圖</label>
+    <description>要點靠左，右側大圖區</description>
+    <whenToUse>需要配圖說明、產品畫面、架構示意；media.enabled 為 true 時優先</whenToUse>
+    <fields>title,bullets,image</fields>
     <boxes>
       <box key="title" x="5" y="8" w="48" h="12"/>
       <box key="body" x="5" y="22" w="48" h="70"/>
+      <box key="image" x="56" y="10" w="38" h="78"/>
+    </boxes>
+  </composition>
+  <composition id="bullets_photo_left" layoutId="bullets">
+    <label>條列 · 左側配圖</label>
+    <description>左側大圖、要點在右</description>
+    <whenToUse>視覺開場、人物或場景照片在左側時；media.enabled 為 true</whenToUse>
+    <fields>title,bullets,image</fields>
+    <boxes>
+      <box key="image" x="5" y="10" w="38" h="78"/>
+      <box key="title" x="47" y="8" w="48" h="12"/>
+      <box key="body" x="47" y="22" w="48" h="70"/>
     </boxes>
   </composition>
   <composition id="bullets_dense" layoutId="bullets">

@@ -117,6 +117,7 @@ export function PptSlideCanvas({
   readOnly = false,
   positionedLayout = true,
   jobId,
+  compositionId,
 }: {
   slide: DeckSlide;
   onChange: (slide: DeckSlide) => void;
@@ -124,6 +125,7 @@ export function PptSlideCanvas({
   /** Enable drag-to-position blocks (preview editor). */
   positionedLayout?: boolean;
   jobId?: string;
+  compositionId?: string;
 }) {
   if (positionedLayout) {
     return (
@@ -132,6 +134,7 @@ export function PptSlideCanvas({
         onChange={onChange}
         draggable={!readOnly}
         jobId={jobId}
+        compositionId={compositionId}
       />
     );
   }
@@ -152,6 +155,7 @@ export function PptSlideCanvas({
       onChange={onChange}
       draggable
       jobId={jobId}
+      compositionId={compositionId}
     />
   );
 }

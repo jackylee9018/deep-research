@@ -5,53 +5,36 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import {
-  PPT_FEATURE_DISPLAY_NAME,
   RESEARCH_FEATURE_DISPLAY_NAME,
   resolveAppDisplayName,
 } from '../lib/app-brand';
 import { loadAppNavOpen, saveAppNavOpen } from '../lib/app-nav-prefs';
 import { navigateToOpenWebUI } from '../lib/openwebui';
-import { useOptionalPptNavHandlers } from './ppt-nav-context';
-import { PptSidebarPanel } from './ppt-sidebar-panel';
 import { useOptionalResearchNavHandlers } from './research-nav-context';
 import { ResearchSidebarPanel } from './research-sidebar-panel';
 
 export function AppNavRail() {
   const pathname = usePathname();
   const isResearchRoute = pathname.startsWith('/research');
-  const isPptRoute = pathname.startsWith('/ppt');
-  const isPptPreviewRoute = pathname.startsWith('/ppt/preview');
-  const isFeatureRoute = isResearchRoute || isPptRoute;
   const researchNav = useOptionalResearchNavHandlers();
-  const pptNav = useOptionalPptNavHandlers();
-
   const [expanded, setExpanded] = useState(false);
   const [brandHover, setBrandHover] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (isPptPreviewRoute) {
-      setExpanded(false);
-      setHydrated(true);
-      return;
-    }
-    setExpanded(loadAppNavOpen(isFeatureRoute));
+    setExpanded(loadAppNavOpen(isResearchRoute));
     setHydrated(true);
-  }, [isFeatureRoute, isPptPreviewRoute]);
+  }, [isResearchRoute]);
 
   const setOpen = (next: boolean) => {
     setExpanded(next);
     saveAppNavOpen(next);
   };
 
-  if (isPptPreviewRoute) {
-    return null;
-  }
-
   if (!hydrated) {
     return (
       <div
-        className={`app-nav-rail app-nav-rail--placeholder${isResearchRoute ? ' is-research' : ''}${isPptRoute ? ' is-ppt' : ''}`}
+        className={`app-nav-rail app-nav-rail--placeholder${isResearchRoute ? ' is-research' : ''}`}
         aria-hidden
       />
     );
@@ -60,10 +43,6 @@ export function AppNavRail() {
   const openNewChat = () => {
     if (isResearchRoute && researchNav) {
       researchNav.onNewResearch();
-      return;
-    }
-    if (isPptRoute && pptNav) {
-      pptNav.onNewPpt();
       return;
     }
     void navigateToOpenWebUI();
@@ -75,7 +54,6 @@ export function AppNavRail() {
     'app-nav-rail',
     expanded ? 'is-expanded' : '',
     isResearchRoute ? 'is-research' : '',
-    isPptRoute ? 'is-ppt' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -95,17 +73,6 @@ export function AppNavRail() {
                   <span className="research-sidebar-logo">OI</span>
                   <span className="research-sidebar-brand-text">
                     {RESEARCH_FEATURE_DISPLAY_NAME}
-                  </span>
-                </Link>
-              ) : isPptRoute ? (
-                <Link
-                  href="/ppt"
-                  className="app-nav-panel-brand research-sidebar-brand"
-                  aria-label={PPT_FEATURE_DISPLAY_NAME}
-                >
-                  <span className="research-sidebar-logo">OI</span>
-                  <span className="research-sidebar-brand-text">
-                    {PPT_FEATURE_DISPLAY_NAME}
                   </span>
                 </Link>
               ) : (
@@ -128,8 +95,6 @@ export function AppNavRail() {
 
             {isResearchRoute ? (
               <ResearchSidebarPanel />
-            ) : isPptRoute ? (
-              <PptSidebarPanel />
             ) : (
               <nav className="app-nav-panel-nav" aria-label="主要功能">
                 <AppNavPanelItem
@@ -173,13 +138,7 @@ export function AppNavRail() {
         </button>
 
         <AppNavRailIconButton
-          label={
-            isResearchRoute
-              ? '新建研究'
-              : isPptRoute
-                ? '新建簡報'
-                : '新對話'
-          }
+          label={isResearchRoute ? '新建研究' : '新對話'}
           onClick={openNewChat}
           icon={<EditIcon />}
         />

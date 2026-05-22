@@ -8,6 +8,7 @@ import { getPptJobsBaseDir, isPptOutputDirConfigured } from '@/ppt/jobs';
 export const runtime = 'nodejs';
 
 const DEFAULT_OPENWEBUI_URL = 'https://ai.spit.hk';
+const DEFAULT_PRESENTATION_AI_URL = 'http://localhost:9081';
 
 function normalizeOrigin(url: string): string {
   return url.trim().replace(/\/+$/, '');
@@ -20,10 +21,17 @@ export async function GET() {
       DEFAULT_OPENWEBUI_URL,
   );
 
+  const presentationAiUrl = normalizeOrigin(
+    process.env.PRESENTATION_AI_URL ??
+      process.env.NEXT_PUBLIC_PRESENTATION_AI_URL ??
+      DEFAULT_PRESENTATION_AI_URL,
+  );
+
   const llm = getLlmEnvStatus();
 
   return NextResponse.json({
     openWebUIUrl,
+    presentationAiUrl,
     appName: resolveAppDisplayName(),
     webSearchAvailable: Boolean(process.env.TAVILY_API_KEY?.trim()),
     llmConfigured: llm.configured,

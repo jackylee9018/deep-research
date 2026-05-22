@@ -7,6 +7,7 @@ import {
   templateThemeCssVars,
   type PptTemplateThemeColors,
 } from '../lib/ppt-template-theme';
+import type { ClientPptTemplateOption } from '../lib/ppt-templates';
 import type { DeckPlan, DeckSlide } from '../lib/ppt-types';
 
 import { clearSlideBoxes } from '../lib/ppt-slide-boxes';
@@ -76,6 +77,9 @@ export function PptPreviewStudio({
   readOnly = false,
   templateId = 'default',
   templateTheme,
+  templateOptions = [],
+  templateLabel,
+  onTemplateIdChange,
   jobId,
 }: {
   deckPlan: DeckPlan;
@@ -91,6 +95,9 @@ export function PptPreviewStudio({
   templateId?: string;
   /** Slide gradient + accent colors from templates/registry.json */
   templateTheme?: PptTemplateThemeColors;
+  templateOptions?: ClientPptTemplateOption[];
+  templateLabel?: string;
+  onTemplateIdChange?: (templateId: string) => void;
   jobId?: string;
 }) {
   const themeVars = templateThemeCssVars(
@@ -104,6 +111,10 @@ export function PptPreviewStudio({
   const slides = deckPlan.slides;
   const activeSlide =
     slides.find(s => s.index === activeIndex) ?? slides[0] ?? null;
+  const activeCompositionId = activeSlide
+    ? deckPlan.outline.slides.find(s => s.index === activeSlide.index)
+        ?.compositionId
+    : undefined;
 
   const goToSlide = useCallback(
     (index: number) => {
@@ -148,7 +159,7 @@ export function PptPreviewStudio({
   return (
     <div
       className={`ppt-studio${presenting ? ' ppt-studio--present' : ''}${readOnly ? ' ppt-studio--readonly' : ''}`}
-      data-ppt-template={templateId}
+      data-ppt-template={templateTheme ? templateId : 'default'}
       style={themeVars}
     >
       <header className="ppt-studio-topbar">
@@ -207,6 +218,33 @@ export function PptPreviewStudio({
         </div>
       </header>
 
+      <div className="ppt-studio-template-bar">
+        <label className="ppt-studio-template-field">
+          <span>匯出模板</span>
+          <select
+            value={templateId}
+            disabled={readOnly || templateOptions.length === 0}
+            onChange={e => onTemplateIdChange?.(e.target.value)}
+          >
+            {templateOptions.length > 0 ? (
+              templateOptions.map(option => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                  {option.fileExists === false ? '（缺少檔案）' : ''}
+                </option>
+              ))
+            ) : (
+              <option value={templateId}>{templateLabel ?? templateId}</option>
+            )}
+          </select>
+        </label>
+        <p className="ppt-studio-template-note">
+          預覽為<strong>座標編輯器</strong>（拖曳區塊、右側色塊為示意），不是上傳 PPTX
+          的實景。換模板會改變背景漸層與強調色；<strong>匯出 PPTX</strong>
+          才套用「{templateLabel ?? templateId}」母片。
+        </p>
+      </div>
+
       <div className="ppt-studio-body">
         {sidebarOpen ? (
           <aside className="ppt-studio-rail ppt-studio-rail--left" aria-label="投影片清單">
@@ -237,7 +275,7 @@ export function PptPreviewStudio({
                 <span className="ppt-studio-stage-hint">
                   {readOnly
                     ? '內容生成中，完成後可編輯'
-                    : '拖曳區塊調整位置 · 右下角縮放 · 匯出 PPTX 會套用座標'}
+                    : `構圖 ${activeCompositionId ?? activeSlide.layoutId} · 拖曳調整座標`}
                 </span>
                 {!readOnly ? (
                   <button
@@ -248,7 +286,10 @@ export function PptPreviewStudio({
                         updateSlide(
                           deckPlan,
                           activeSlide.index,
-                          clearSlideBoxes(activeSlide),
+                          clearSlideBoxes(
+                            activeSlide,
+                            activeCompositionId,
+                          ),
                         ),
                       )
                     }
@@ -262,6 +303,7 @@ export function PptPreviewStudio({
                 readOnly={readOnly}
                 positionedLayout
                 jobId={jobId}
+                compositionId={activeCompositionId}
                 onChange={next =>
                   readOnly
                     ? undefined
@@ -327,6 +369,7 @@ export function PptPreviewStudio({
               onChange={() => {}}
               readOnly
               jobId={jobId}
+              compositionId={activeCompositionId}
             />
           </div>
           <div className="ppt-studio-present-nav">

@@ -27,6 +27,7 @@ type PptOutlineRequestBody = {
   /** @deprecated Use pageTextPreset; kept for older clients. */
   slideCount?: number;
   pageTextPreset?: PptPageTextPreset;
+  templateId?: string;
   model?: string;
   attachments?: PromptAttachment[];
   webSearch?: boolean;
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
     15,
   );
   const pageTextPreset = resolvePptPageTextPreset(body.pageTextPreset);
+  const templateId = body.templateId?.trim() || 'default';
   const modelId = resolveResearchModelId(body.model);
   const attachments = Array.isArray(body.attachments)
     ? body.attachments.filter(
@@ -60,7 +62,7 @@ export async function POST(req: Request) {
     : undefined;
 
   pptLog(
-    `開始產生大綱（串流）｜模型 ${modelId}｜約 ${slideCount} 頁｜文字量 ${pageTextPreset}${
+    `開始產生大綱（串流）｜模型 ${modelId}｜約 ${slideCount} 頁｜文字量 ${pageTextPreset}｜模板 ${templateId}${
       body.webSearch ? '｜聯網搜尋' : ''
     }${attachments?.length ? `｜${attachments.length} 個附件` : ''}`,
   );
@@ -100,6 +102,7 @@ export async function POST(req: Request) {
           prompt,
           slideCount,
           pageTextPreset,
+          templateId,
           attachments,
           webContext,
         });

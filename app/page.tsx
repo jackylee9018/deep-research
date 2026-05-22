@@ -9,6 +9,13 @@ import { HomePromptLayout } from './components/home-prompt-layout';
 import { LightRouteShell } from './components/light-route-shell';
 import { PromptInput } from './components/prompt-input';
 import { navigateToOpenWebUI, preloadOpenWebUIOrigin } from './lib/openwebui';
+import {
+  buildPresentationAiCreateUrl,
+  getWorkspaceReturnUrl,
+  navigateToPresentationAi,
+  preloadPresentationAiOrigin,
+  resolvePresentationAiOrigin,
+} from './lib/presentation-ai';
 
 const FEATURES = [
   {
@@ -22,7 +29,7 @@ const FEATURES = [
   },
   {
     id: 'ppt',
-    href: '/ppt',
+    href: null,
     title: '生成 PPT',
     description: '一鍵生成專業簡報',
     iconBg: '#d1fae5',
@@ -53,9 +60,21 @@ export default function HomePage() {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [redirecting, setRedirecting] = useState(false);
+  const [presentationHref, setPresentationHref] = useState(() =>
+    buildPresentationAiCreateUrl(),
+  );
 
   useEffect(() => {
     preloadOpenWebUIOrigin();
+    preloadPresentationAiOrigin();
+    void resolvePresentationAiOrigin().then(origin => {
+      setPresentationHref(
+        buildPresentationAiCreateUrl(
+          { returnUrl: getWorkspaceReturnUrl('/') },
+          origin,
+        ),
+      );
+    });
   }, []);
 
   const goToOpenWebUI = async (query?: string, extra?: { call?: boolean }) => {
@@ -78,6 +97,15 @@ export default function HomePage() {
       return;
     }
     router.push('/research');
+  };
+
+  const goToPresentationAi = (query?: string) => {
+    const q = (query ?? prompt).trim();
+    setRedirecting(true);
+    void navigateToPresentationAi({
+      ...(q ? { prompt: q } : {}),
+      webSearch: Boolean(q),
+    }).finally(() => setRedirecting(false));
   };
 
   return (
@@ -107,6 +135,24 @@ export default function HomePage() {
                 </>
               );
 
+              if (feature.id === 'ppt') {
+                return (
+                  <a
+                    key={feature.id}
+                    href={presentationHref}
+                    className="home-feature-card"
+                    onClick={e => {
+                      if (prompt.trim()) {
+                        e.preventDefault();
+                        goToPresentationAi();
+                      }
+                    }}
+                  >
+                    {content}
+                  </a>
+                );
+              }
+
               if (feature.href) {
                 return (
                   <Link
@@ -117,11 +163,6 @@ export default function HomePage() {
                       if (feature.id === 'deep-research' && prompt.trim()) {
                         e.preventDefault();
                         goToResearch();
-                      } else if (feature.id === 'ppt' && prompt.trim()) {
-                        e.preventDefault();
-                        router.push(
-                          `/ppt?q=${encodeURIComponent(prompt.trim())}`,
-                        );
                       }
                     }}
                   >

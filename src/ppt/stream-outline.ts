@@ -7,6 +7,7 @@ import {
 } from '@/prompt-attachments';
 import { systemPrompt } from '@/prompt';
 
+import { pptOutlineDesignRules } from './design-guidelines';
 import { pptLog, pptLogWarn } from './log';
 import {
   DEFAULT_PPT_OUTLINE_SLIDE_COUNT,
@@ -23,12 +24,14 @@ export function buildOutlineStreamPrompt({
   pageTextPreset,
   attachments,
   webContext,
+  templateId = 'default',
 }: {
   prompt: string;
   slideCount?: number;
   pageTextPreset?: PptPageTextPreset;
   attachments?: PromptAttachment[];
   webContext?: string;
+  templateId?: string;
 }) {
   const fullPrompt = buildPromptWithAttachments(prompt, attachments);
   const webSection = webContext?.trim()
@@ -56,6 +59,7 @@ Format rules:
 - First line of each slide: concise headline (no bullet prefix, no numbering).
 - Following lines: bullet points, each starting with "• ".
 ${pageTextRules}
+${pptOutlineDesignRules(templateId)}
 - First slide: cover/title for the presentation.
 - Last slide: closing / summary / next steps.
 - Narrative: opening → body → closing.
@@ -114,6 +118,7 @@ export function streamPptOutlineText(options: {
   pageTextPreset?: PptPageTextPreset;
   attachments?: PromptAttachment[];
   webContext?: string;
+  templateId?: string;
 }): {
   stream: PptOutlineTextStream;
   resolveFullText: () => Promise<string>;

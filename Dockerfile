@@ -23,6 +23,6 @@ RUN pip3 install --break-system-packages --no-cache-dir -r skills/pptx/requireme
 
 RUN npm run build:web
 
-EXPOSE 3000
+EXPOSE 9080
 
 CMD ["npm", "run", "start:web"]

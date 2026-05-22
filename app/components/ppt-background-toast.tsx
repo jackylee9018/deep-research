@@ -1,13 +1,31 @@
 'use client';
 
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import {
+  buildPresentationAiCreateUrl,
+  getWorkspaceReturnUrl,
+  resolvePresentationAiOrigin,
+} from '../lib/presentation-ai';
 import { usePptJobs } from './ppt-jobs-provider';
 
 export function PptBackgroundToast() {
   const { jobs, history, runningCount, pendingCount, dismissJob } = usePptJobs();
   const [dismissedToastId, setDismissedToastId] = useState<string | null>(null);
+  const [presentationHref, setPresentationHref] = useState(() =>
+    buildPresentationAiCreateUrl(),
+  );
+
+  useEffect(() => {
+    void resolvePresentationAiOrigin().then(origin => {
+      setPresentationHref(
+        buildPresentationAiCreateUrl(
+          { returnUrl: getWorkspaceReturnUrl('/') },
+          origin,
+        ),
+      );
+    });
+  }, []);
 
   const activeTotal = runningCount + pendingCount;
 
@@ -34,7 +52,7 @@ export function PptBackgroundToast() {
           {runningCount > 0 && pendingCount > 0 ? '，' : null}
           {pendingCount > 0 ? `${pendingCount} 個待處理` : null}
         </span>
-        <Link href="/ppt">查看進度 →</Link>
+        <a href={presentationHref}>查看進度 →</a>
       </div>
     );
   }
@@ -54,7 +72,7 @@ export function PptBackgroundToast() {
             ? `（${latestCompleted.slideCount} 頁）`
             : ''}
         </span>
-        <Link href={latestCompleted.previewUrl}>查看預覽</Link>
+        <a href={presentationHref}>查看簡報服務 →</a>
         <button
           type="button"
           className="ppt-bg-toast-dismiss"
@@ -77,7 +95,7 @@ export function PptBackgroundToast() {
           PPT 生成失敗
           {latestFailed.error ? `：${latestFailed.error}` : ''}
         </span>
-        <Link href="/ppt">查看詳情 →</Link>
+        <a href={presentationHref}>前往簡報服務 →</a>
         <button
           type="button"
           className="ppt-bg-toast-dismiss"

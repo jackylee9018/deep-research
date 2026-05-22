@@ -7,5 +7,6 @@ services:
     environment:
       # Override in .env.local; used at runtime by GET /api/app-config
       OPENWEBUI_URL: ${OPENWEBUI_URL:-https://ai.spit.hk}
+      PRESENTATION_AI_URL: ${PRESENTATION_AI_URL:-http://localhost:9081}
     ports:
-      - '3000:3000'
+      - '9080:9080'

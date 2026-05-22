@@ -59,6 +59,7 @@ function Box({
   rect,
   onChange,
   draggable,
+  compositionId,
   children,
 }: {
   slide: DeckSlide;
@@ -67,11 +68,12 @@ function Box({
   rect: BoxRect;
   onChange: (slide: DeckSlide) => void;
   draggable: boolean;
+  compositionId?: string;
   children: React.ReactNode;
 }) {
   const role = slideBoxRole(boxKey);
   const updateRect = (next: BoxRect) => {
-    onChange(patchSlideBox(slide, boxKey, next));
+    onChange(patchSlideBox(slide, boxKey, next, compositionId));
   };
 
   if (!draggable) {
@@ -142,13 +144,15 @@ export function PptPositionedSlideCanvas({
   onChange,
   draggable = true,
   jobId,
+  compositionId,
 }: {
   slide: DeckSlide;
   onChange: (slide: DeckSlide) => void;
   draggable?: boolean;
   jobId?: string;
+  compositionId?: string;
 }) {
-  const boxes = getEffectiveSlideBoxes(slide);
+  const boxes = getEffectiveSlideBoxes(slide, compositionId);
   const patch = (next: Partial<DeckSlide>) =>
     onChange({ ...slide, ...next } as DeckSlide);
 
@@ -174,6 +178,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.title}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className={
@@ -195,6 +200,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.subtitle}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-hero-subtitle"
@@ -217,6 +223,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.title}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-slide-title"
@@ -234,6 +241,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.body}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <textarea
                   className="ppt-canvas-bullets"
@@ -267,6 +275,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.title}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-slide-title"
@@ -283,6 +292,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.leftTitle}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-col-title"
@@ -299,6 +309,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.leftBody}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <textarea
                   className="ppt-canvas-bullets ppt-canvas-bullets--sm"
@@ -318,6 +329,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.rightTitle}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-col-title"
@@ -334,6 +346,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.rightBody}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <textarea
                   className="ppt-canvas-bullets ppt-canvas-bullets--sm"
@@ -358,6 +371,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.title}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-col-title"
@@ -375,6 +389,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.body}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <textarea
                   className="ppt-canvas-quote"
@@ -392,6 +407,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.subtitle}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-hero-subtitle"
@@ -416,6 +432,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.title}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-slide-title"
@@ -432,6 +449,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.subtitle}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-stat-value"
@@ -448,6 +466,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.body}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <textarea
                   className="ppt-canvas-bullets"
@@ -481,6 +500,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.title}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-slide-title"
@@ -497,6 +517,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.subtitle}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <CanvasInput
                   className="ppt-canvas-hero-subtitle"
@@ -513,6 +534,7 @@ export function PptPositionedSlideCanvas({
                 rect={boxes.body}
                 onChange={onChange}
                 draggable={draggable}
+                compositionId={compositionId}
               >
                 <textarea
                   className="ppt-canvas-bullets ppt-canvas-bullets--compact"

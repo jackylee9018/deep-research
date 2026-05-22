@@ -1,6 +1,7 @@
 import { processDataStream, type JSONValue } from 'ai';
 
 import type { PptPageTextPreset } from './ppt-page-text';
+import type { PptTemplateId } from './ppt-templates';
 import type { OutlineDeck } from './ppt-types';
 import type { PromptAttachment } from './prompt-attachments';
 import type { ResearchModelId } from './research-models';
@@ -52,6 +53,7 @@ export async function runPptOutlineStream(
   body: {
     prompt: string;
     pageTextPreset: PptPageTextPreset;
+    templateId?: PptTemplateId;
     model: ResearchModelId;
     attachments?: PromptAttachment[];
     webSearch?: boolean;

@@ -76,6 +76,41 @@ export function getCompositionBoxes(
   return findComposition(compositionId)?.boxes ?? {};
 }
 
+function appendCompositionBoxes(
+  lines: string[],
+  boxes: CompositionEntry['boxes'],
+): void {
+  lines.push('    <boxes>');
+  for (const [key, rect] of Object.entries(boxes)) {
+    if (!rect) {
+      continue;
+    }
+    lines.push(
+      `      <box key="${key}" x="${rect.x}" y="${rect.y}" w="${rect.w}" h="${rect.h}"/>`,
+    );
+  }
+  lines.push('    </boxes>');
+}
+
+function appendCompositionIndexEntry(lines: string[], c: CompositionEntry): void {
+  lines.push(`  <composition id="${c.id}" layoutId="${c.layoutId}">`);
+  lines.push(`    <label>${escapeXml(c.label)}</label>`);
+  lines.push(`    <whenToUse>${escapeXml(c.whenToUse)}</whenToUse>`);
+  lines.push(`    <fields>${c.fields.join(',')}</fields>`);
+  lines.push('  </composition>');
+}
+
+function appendCompositionDetailEntry(lines: string[], c: CompositionEntry): void {
+  lines.push(`  <composition id="${c.id}" layoutId="${c.layoutId}">`);
+  lines.push(`    <label>${escapeXml(c.label)}</label>`);
+  lines.push(`    <description>${escapeXml(c.description)}</description>`);
+  lines.push(`    <whenToUse>${escapeXml(c.whenToUse)}</whenToUse>`);
+  lines.push(`    <fields>${c.fields.join(',')}</fields>`);
+  appendCompositionBoxes(lines, c.boxes);
+  lines.push('  </composition>');
+}
+
+/** Full catalog with boxes (sync script, human review). */
 export function compositionCatalogXml(): string {
   const lines: string[] = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -83,25 +118,41 @@ export function compositionCatalogXml(): string {
   ];
 
   for (const c of catalog.compositions) {
-    lines.push(`  <composition id="${c.id}" layoutId="${c.layoutId}">`);
-    lines.push(`    <label>${escapeXml(c.label)}</label>`);
-    lines.push(`    <description>${escapeXml(c.description)}</description>`);
-    lines.push(`    <whenToUse>${escapeXml(c.whenToUse)}</whenToUse>`);
-    lines.push(`    <fields>${c.fields.join(',')}</fields>`);
-    lines.push('    <boxes>');
-    for (const [key, rect] of Object.entries(c.boxes)) {
-      if (!rect) {
-        continue;
-      }
-      lines.push(
-        `      <box key="${key}" x="${rect.x}" y="${rect.y}" w="${rect.w}" h="${rect.h}"/>`,
-      );
-    }
-    lines.push('    </boxes>');
-    lines.push('  </composition>');
+    appendCompositionDetailEntry(lines, c);
   }
 
   lines.push('</compositionCatalog>');
+  return lines.join('\n');
+}
+
+/** Index only — for outline LLM (progressive disclosure, no coordinates). */
+export function compositionCatalogIndexXml(): string {
+  const lines: string[] = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<compositionCatalogIndex version="1">',
+  ];
+
+  for (const c of catalog.compositions) {
+    appendCompositionIndexEntry(lines, c);
+  }
+
+  lines.push('</compositionCatalogIndex>');
+  return lines.join('\n');
+}
+
+/** Single composition with boxes — for per-slide content LLM. */
+export function compositionCatalogDetailXml(compositionId: string): string {
+  const entry = findComposition(compositionId);
+  if (!entry) {
+    return `<compositionMissing id="${escapeXml(compositionId)}"/>`;
+  }
+
+  const lines: string[] = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<compositionDetail version="1">',
+  ];
+  appendCompositionDetailEntry(lines, entry);
+  lines.push('</compositionDetail>');
   return lines.join('\n');
 }
 
@@ -113,10 +164,14 @@ function escapeXml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function compositionCatalogPromptForOutline(): string {
-  return `${compositionCatalogXml()}
+export function compositionDetailPromptForSlide(
+  compositionId: string | undefined,
+): string {
+  const id = compositionId?.trim() || 'bullets_standard';
+  return compositionCatalogDetailXml(id);
+}
 
-Selection rules:
+const OUTLINE_SELECTION_RULES = `Selection rules:
 - For EACH slide, set "compositionId" to exactly one id from the catalog above.
 - Pick the composition whose whenToUse best matches that slide's narrative role and content shape.
 - Slide 1: prefer title_hero or title_center.
@@ -128,4 +183,9 @@ Selection rules:
 - When a slide needs a supporting photo or diagram, set media.enabled to true and media.brief (English keywords for image search). Pick bullets_photo_right or bullets_photo_left.
 - Do not set media.enabled on title, section, quote, stat, or closing unless the user explicitly asks for a hero image (prefer bullets_photo_* on body slides).
 - Do not invent new composition ids.`;
+
+export function compositionCatalogPromptForOutline(): string {
+  return `${compositionCatalogIndexXml()}
+
+${OUTLINE_SELECTION_RULES}`;
 }

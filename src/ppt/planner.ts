@@ -6,6 +6,10 @@ import {
 } from '@/prompt-attachments';
 import { systemPrompt } from '@/prompt';
 
+import {
+  pptContentDesignRules,
+  pptOutlineDesignRules,
+} from './design-guidelines';
 import { pptLog } from './log';
 import {
   DEFAULT_PPT_OUTLINE_SLIDE_COUNT,
@@ -22,7 +26,11 @@ import {
   normalizeOutlineDeck,
   outlineDeckGenerationSchema,
 } from './normalize';
-import { compositionCatalogPromptForOutline } from './composition/load-catalog';
+import { BOX_TWEAK_RULES_FOR_LLM } from './composition/merge-boxes';
+import {
+  compositionCatalogPromptForOutline,
+  compositionDetailPromptForSlide,
+} from './composition/load-catalog';
 import { refineOutlineCompositions } from './composition/refine-outline';
 import {
   pptLayoutCatalogPrompt,
@@ -46,12 +54,14 @@ export async function planPptOutline({
   pageTextPreset,
   attachments,
   webContext,
+  templateId = 'default',
 }: {
   prompt: string;
   slideCount?: number;
   pageTextPreset?: PptPageTextPreset;
   attachments?: PromptAttachment[];
   webContext?: string;
+  templateId?: string;
 }): Promise<OutlineDeck> {
   const fullPrompt = buildPromptWithAttachments(prompt, attachments);
   const webSection = webContext?.trim()
@@ -69,7 +79,7 @@ export async function planPptOutline({
 User request:
 ${fullPrompt}
 ${webSection}
-Composition catalog (XML). For EACH slide you MUST pick exactly one compositionId:
+Composition catalog index (XML, no coordinates). For EACH slide pick exactly one compositionId:
 ${compositionCatalogPromptForOutline()}
 
 Content field limits (layoutId families):
@@ -84,6 +94,7 @@ Rules:
 - Keep each slide headline concrete and concise.
 - bulletSummary should describe what belongs on the slide, not final polished copy.
 ${pageTextRules}
+${pptOutlineDesignRules(templateId)}
 - Narrative flow: opening (problem/goal) → body (analysis/solution/evidence) → closing (actions/conclusion).
 ${
   webContext?.trim()
@@ -151,15 +162,21 @@ ${JSON.stringify(outlineSlide, null, 2)}
 Prior slides already written:
 ${prior || '(none yet)'}
 
+Composition detail for this slide (default box positions):
+${compositionDetailPromptForSlide(outlineSlide.compositionId)}
+
 Layout limits:
 ${pptLayoutCatalogPrompt()}
 
+${BOX_TWEAK_RULES_FOR_LLM}
+
 Rules:
 - Return exactly one slide object matching index ${outlineSlide.index}.
-- Do not change layoutId.
+- Do not change layoutId or compositionId.
 - Fill layout-specific fields (quote, value, bullets, etc.).
 - Keep within schema character limits.
-- Validation issues to avoid: ${issues.length ? JSON.stringify(issues) : 'none'}`,
+- Validation issues to avoid: ${issues.length ? JSON.stringify(issues) : 'none'}
+${pptContentDesignRules(templateId)}`,
       schema: singleSlideGenerationSchema,
       temperature: 0.25,
     });
@@ -247,6 +264,15 @@ ${slideLockPrompt(outline)}
 Layout limits:
 ${pptLayoutCatalogPrompt()}
 
+${BOX_TWEAK_RULES_FOR_LLM}
+
+Per-slide composition details (use matching slide's compositionId for default boxes):
+${outline.slides
+  .map(
+    s => `--- Slide ${s.index} (${s.compositionId ?? s.layoutId}) ---\n${compositionDetailPromptForSlide(s.compositionId)}`,
+  )
+  .join('\n\n')}
+
 Validation feedback from the previous attempt:
 ${issueText}
 
@@ -254,9 +280,11 @@ Rules:
 - Return one slide object per outline slide, in the same order, with matching index values.
 - Do not add, remove, reorder, or change layoutId / compositionId for any slide.
 - Fill fields required by each layoutId (quote layout needs "quote"; stat needs "value"; etc.).
+- Optional per-slide "boxes" tweaks only when needed (see box layout rules).
 - Keep all text within the schema limits.
 - If there are validation issues, fix only the affected slide content unless a nearby wording adjustment is necessary.
 - Use clear business presentation language, not verbose report prose.
+${pptContentDesignRules(templateId)}
 - Return JSON with a top-level "slides" array only. Do not include outline metadata.`,
     schema: deckPlanGenerationSchema,
     temperature: 0.25,

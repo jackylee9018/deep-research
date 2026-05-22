@@ -5,7 +5,10 @@ import type { DeckPlan, OutlineDeck } from './ppt-types';
 const PLACEHOLDER = '…';
 
 /** Placeholder deck for preview while LangGraph / LLM is still running. */
-export function outlineToSkeletonDeckPlan(outline: OutlineDeck): DeckPlan {
+export function outlineToSkeletonDeckPlan(
+  outline: OutlineDeck,
+  templateId = 'default',
+): DeckPlan {
   return buildDeckPlan(outline, {
     slides: outline.slides.map(slide => {
       const base = {
@@ -57,5 +60,5 @@ export function outlineToSkeletonDeckPlan(outline: OutlineDeck): DeckPlan {
           return base;
       }
     }),
-  });
+  }, templateId);
 }

@@ -55,14 +55,136 @@ export function resolvePptTemplateOption(
   return options.find(t => t.id === id) ?? options[0]!;
 }
 
-export async function fetchPptTemplateOptions(): Promise<ClientPptTemplateOption[]> {
-  const res = await fetch('/api/ppt/templates', { cache: 'no-store' });
-  if (!res.ok) {
-    return FALLBACK_PPT_TEMPLATE_OPTIONS;
+function normalizeTemplateOption(raw: unknown): ClientPptTemplateOption | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
   }
-  const data = (await res.json()) as { templates?: ClientPptTemplateOption[] };
-  if (!data.templates?.length) {
-    return FALLBACK_PPT_TEMPLATE_OPTIONS;
+  const row = raw as Record<string, unknown>;
+  const id = typeof row.id === 'string' ? row.id.trim() : '';
+  if (!id) {
+    return null;
   }
-  return data.templates;
+
+  const exportTheme =
+    row.exportTheme && typeof row.exportTheme === 'object'
+      ? (row.exportTheme as Record<string, unknown>)
+      : null;
+
+  const pickColor = (key: keyof PptTemplateThemeColors): string => {
+    const fromRow = row[key];
+    if (typeof fromRow === 'string' && row[key]) {
+      return fromRow;
+    }
+    const fromTheme = exportTheme?.[key];
+    if (typeof fromTheme === 'string' && fromTheme) {
+      return fromTheme;
+    }
+    return DEFAULT_TEMPLATE_THEME[key];
+  };
+
+  return {
+    id,
+    label: typeof row.label === 'string' && row.label.trim() ? row.label : id,
+    description: typeof row.description === 'string' ? row.description : '',
+    previewTheme:
+      typeof row.previewTheme === 'string' && row.previewTheme.trim()
+        ? row.previewTheme
+        : id,
+    fileExists: row.fileExists !== false,
+    accent: pickColor('accent'),
+    title: pickColor('title'),
+    body: pickColor('body'),
+    muted: pickColor('muted'),
+    slideBackground: pickColor('slideBackground'),
+    slideBackgroundEnd: pickColor('slideBackgroundEnd'),
+  };
+}
+
+export async function fetchPptTemplateOptions(): Promise<{
+  templates: ClientPptTemplateOption[];
+  error?: string;
+}> {
+  try {
+    const res = await fetch('/api/ppt/templates', { cache: 'no-store' });
+    if (!res.ok) {
+      return {
+        templates: FALLBACK_PPT_TEMPLATE_OPTIONS,
+        error: `載入模板失敗（HTTP ${res.status}）`,
+      };
+    }
+    const data = (await res.json()) as { templates?: unknown[]; error?: string };
+    if (data.error) {
+      return { templates: FALLBACK_PPT_TEMPLATE_OPTIONS, error: data.error };
+    }
+    const normalized = (data.templates ?? [])
+      .map(normalizeTemplateOption)
+      .filter((t): t is ClientPptTemplateOption => t !== null);
+    if (!normalized.length) {
+      return {
+        templates: FALLBACK_PPT_TEMPLATE_OPTIONS,
+        error: '模板列表為空',
+      };
+    }
+    return { templates: normalized };
+  } catch (error) {
+    return {
+      templates: FALLBACK_PPT_TEMPLATE_OPTIONS,
+      error: error instanceof Error ? error.message : '載入模板失敗',
+    };
+  }
+}
+
+export type PptTemplateImportResponse = {
+  ok: true;
+  template: ClientPptTemplateOption & { file: string; fileExists: boolean };
+  created: boolean;
+  overwritten: boolean;
+  warnings: string[];
+  analysisSummary: string;
+};
+
+export async function importPptTemplateFile(
+  file: File,
+  options?: { id?: string; label?: string; description?: string },
+): Promise<PptTemplateImportResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (options?.id?.trim()) {
+    formData.append('id', options.id.trim());
+  }
+  if (options?.label?.trim()) {
+    formData.append('label', options.label.trim());
+  }
+  if (options?.description?.trim()) {
+    formData.append('description', options.description.trim());
+  }
+
+  const res = await fetch('/api/ppt/templates/import', {
+    method: 'POST',
+    body: formData,
+  });
+
+  let data: PptTemplateImportResponse & { ok?: boolean; error?: string };
+  try {
+    data = (await res.json()) as typeof data;
+  } catch {
+    throw new Error(`匯入失敗（HTTP ${res.status}，回應非 JSON）`);
+  }
+
+  if (!res.ok || data.ok !== true) {
+    throw new Error(data.error ?? `匯入失敗（HTTP ${res.status}）`);
+  }
+
+  const normalized = normalizeTemplateOption({
+    ...data.template,
+    fileExists: true,
+  });
+  if (!normalized) {
+    throw new Error('匯入成功但模板資料格式無效');
+  }
+
+  return {
+    ...data,
+    template: { ...normalized, file: data.template.file, fileExists: true },
+  };
 }

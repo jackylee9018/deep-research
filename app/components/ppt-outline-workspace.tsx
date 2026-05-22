@@ -25,6 +25,8 @@ type ContentView = 'free' | 'slides';
 
 type PptOutlineWorkspaceProps = {
   outline: OutlineDeck;
+  /** Remounts only the center content editor when outline structure resets. */
+  contentRevision?: number;
   onChange: (outline: OutlineDeck) => void;
   pageTextPreset: PptPageTextPreset;
   onPageTextPresetChange: (value: PptPageTextPreset) => void;
@@ -54,6 +56,7 @@ function reindexSlides(slides: OutlineDeck['slides']): OutlineDeck['slides'] {
 
 export function PptOutlineWorkspace({
   outline,
+  contentRevision = 0,
   onChange,
   pageTextPreset,
   onPageTextPresetChange,
@@ -317,6 +320,7 @@ export function PptOutlineWorkspace({
           ) : null}
 
           <div
+            key={contentRevision}
             className={
               isStreaming
                 ? 'ppt-outline-content-body ppt-outline-content-body--streaming'

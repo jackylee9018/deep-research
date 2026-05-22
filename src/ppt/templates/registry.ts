@@ -3,15 +3,9 @@ import path from 'path';
 
 import { z } from 'zod';
 
-const REPO_ROOT = process.cwd();
+import { pptLayoutIdSchema, type PptLayoutId } from '../schemas/layout-catalog';
 
-const pptLayoutIdSchema = z.enum([
-  'title',
-  'section',
-  'bullets',
-  'two_column',
-  'closing',
-]);
+const REPO_ROOT = process.cwd();
 
 const exportThemeSchema = z.object({
   accent: z.string(),
@@ -45,15 +39,23 @@ export type PptTemplateEntry = z.infer<typeof templateEntrySchema> & {
 
 let cachedRegistry: z.infer<typeof registrySchema> | undefined;
 
-function loadRegistryFile() {
-  if (cachedRegistry) {
-    return cachedRegistry;
-  }
+export function invalidatePptTemplateRegistryCache(): void {
+  cachedRegistry = undefined;
+}
+
+export function loadPptTemplateRegistryRaw(): z.infer<typeof registrySchema> {
   const raw = readFileSync(
     path.join(REPO_ROOT, 'templates', 'registry.json'),
     'utf8',
   );
-  cachedRegistry = registrySchema.parse(JSON.parse(raw));
+  return registrySchema.parse(JSON.parse(raw));
+}
+
+function loadRegistryFile() {
+  if (cachedRegistry) {
+    return cachedRegistry;
+  }
+  cachedRegistry = loadPptTemplateRegistryRaw();
   return cachedRegistry;
 }
 
@@ -83,7 +85,7 @@ export function getPptTemplateIds(): string[] {
 
 export function templateLayoutIndex(
   templateId: string | undefined,
-  layoutId: z.infer<typeof pptLayoutIdSchema>,
+  layoutId: PptLayoutId,
 ): number {
   const entry = resolvePptTemplate(templateId);
   const fallback = resolvePptTemplate('default');

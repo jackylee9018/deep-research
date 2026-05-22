@@ -120,6 +120,78 @@
         "slideBackground": "FFFBEB",
         "slideBackgroundEnd": "FEF3C7"
       }
+    },
+    {
+      "id": "building_effective_agents_2",
+      "label": "building_effective_agents",
+      "description": "由 building_effective_agents.pptx 匯入（11 種母片版式）",
+      "file": "building_effective_agents_2.pptx",
+      "previewTheme": "building_effective_agents_2",
+      "layouts": {
+        "title": 0,
+        "section": 2,
+        "bullets": 1,
+        "two_column": 3,
+        "quote": 1,
+        "stat": 1,
+        "closing": 4
+      },
+      "exportTheme": {
+        "accent": "2563EB",
+        "title": "0F172A",
+        "body": "334155",
+        "muted": "475569",
+        "slideBackground": "F8FAFC",
+        "slideBackgroundEnd": "EEF2FF"
+      }
+    },
+    {
+      "id": "building_effective_agents_3",
+      "label": "building_effective_agents",
+      "description": "由 building_effective_agents.pptx 匯入（11 種母片版式）",
+      "file": "building_effective_agents_3.pptx",
+      "previewTheme": "building_effective_agents_3",
+      "layouts": {
+        "title": 0,
+        "section": 2,
+        "bullets": 1,
+        "two_column": 3,
+        "quote": 1,
+        "stat": 1,
+        "closing": 4
+      },
+      "exportTheme": {
+        "accent": "2563EB",
+        "title": "0F172A",
+        "body": "334155",
+        "muted": "475569",
+        "slideBackground": "F8FAFC",
+        "slideBackgroundEnd": "EEF2FF"
+      }
+    },
+    {
+      "id": "cangzhuo",
+      "label": "cangzhuo",
+      "description": "由 cangzhuo.pptx 匯入（11 種母片版式）",
+      "file": "cangzhuo.pptx",
+      "previewTheme": "cangzhuo",
+      "layouts": {
+        "title": 0,
+        "section": 2,
+        "bullets": 1,
+        "two_column": 3,
+        "quote": 1,
+        "stat": 1,
+        "closing": 4
+      },
+      "exportTheme": {
+        "accent": "2563EB",
+        "title": "0F172A",
+        "body": "334155",
+        "muted": "475569",
+        "slideBackground": "F8FAFC",
+        "slideBackgroundEnd": "EEF2FF"
+      }
     }
   ]
 }
