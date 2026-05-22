@@ -16,12 +16,11 @@ export type PptGenerationFeedbackProps = {
   logs?: string[];
   issues?: ValidationIssue[];
   error?: string;
-  downloadUrl?: string;
-  slideCount?: number;
-  outlineTitle?: string;
   progressDismissed?: boolean;
   onDismissProgress?: () => void;
   onDismissResult?: () => void;
+  slideCount?: number;
+  readySlideCount?: number;
 };
 
 function mapPhase(phase: PptJobPhase | undefined): PptProgressPhase {
@@ -39,21 +38,19 @@ export function PptGenerationFeedback({
   logs = [],
   issues = [],
   error,
-  downloadUrl,
-  slideCount,
-  outlineTitle,
   progressDismissed = false,
   onDismissProgress,
   onDismissResult,
+  slideCount,
+  readySlideCount,
 }: PptGenerationFeedbackProps) {
   const isRunning = status === 'running' || status === 'pending';
-  const isCompleted = status === 'completed' && Boolean(downloadUrl);
   const isFailed = status === 'failed';
 
   const showProgressOverlay = isRunning && !progressDismissed;
-  const showResult = isCompleted || isFailed;
+  const showFailure = isFailed;
 
-  if (!showProgressOverlay && !showResult) {
+  if (!showProgressOverlay && !showFailure) {
     return null;
   }
 
@@ -68,58 +65,38 @@ export function PptGenerationFeedback({
             logs={logs}
             issues={issues}
             error={error}
+            slideCount={slideCount}
+            readySlideCount={readySlideCount}
             onDismiss={onDismissProgress}
           />
         </div>
       ) : null}
 
-      {showResult ? (
+      {showFailure ? (
         <div
-          className={
-            isCompleted
-              ? 'ppt-outline-result ppt-outline-result--success'
-              : 'ppt-outline-result ppt-outline-result--error'
-          }
-          role="status"
+          className="ppt-outline-result ppt-outline-result--error"
+          role="alert"
           aria-live="polite"
         >
           <div className="ppt-outline-result-body">
-            {isCompleted ? (
-              <>
-                <p className="ppt-outline-result-title">
-                  簡報已生成
-                  {outlineTitle ? `：${outlineTitle}` : ''}
-                  {slideCount != null ? `（${slideCount} 頁）` : ''}
-                </p>
-                <p className="ppt-outline-result-detail">
-                  可下載 .pptx 檔案；若內容需調整，可修改大綱後再次生成。
-                </p>
-                <a className="ppt-download" href={downloadUrl} download>
-                  下載 PPTX
-                </a>
-              </>
+            <p className="ppt-outline-result-title">PPT 生成失敗</p>
+            {error ? (
+              <p className="ppt-outline-result-detail">{error}</p>
             ) : (
-              <>
-                <p className="ppt-outline-result-title">PPT 生成失敗</p>
-                {error ? (
-                  <p className="ppt-outline-result-detail">{error}</p>
-                ) : (
-                  <p className="ppt-outline-result-detail">
-                    請調整大綱或設定後再試一次。
-                  </p>
-                )}
-                {issues.length > 0 ? (
-                  <ul className="ppt-outline-result-issues">
-                    {issues.map((issue, index) => (
-                      <li key={`${issue.code}-${index}`}>
-                        {issue.slideIndex != null ? `第 ${issue.slideIndex} 頁：` : ''}
-                        {issue.message}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </>
+              <p className="ppt-outline-result-detail">
+                請調整大綱或設定後再試一次。
+              </p>
             )}
+            {issues.length > 0 ? (
+              <ul className="ppt-outline-result-issues">
+                {issues.map((issue, index) => (
+                  <li key={`${issue.code}-${index}`}>
+                    {issue.slideIndex != null ? `第 ${issue.slideIndex} 頁：` : ''}
+                    {issue.message}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
           {onDismissResult ? (
             <button

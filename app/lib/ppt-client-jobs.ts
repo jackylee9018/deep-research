@@ -1,3 +1,4 @@
+import type { PptTemplateId } from './ppt-templates';
 import type { OutlineDeck, ValidationIssue } from './ppt-types';
 
 import type { PromptAttachment } from './prompt-attachments';
@@ -26,8 +27,13 @@ export type PptJob = {
   maxAttempts: number;
   logs: string[];
   issues: ValidationIssue[];
+  /** Server job folder id (from generate stream). */
+  serverJobId?: string;
+  previewUrl?: string;
   downloadUrl?: string;
   slideCount?: number;
+  readySlideCount?: number;
+  templateId?: PptTemplateId;
   error?: string;
   createdAt: number;
   updatedAt: number;
@@ -66,6 +72,7 @@ export function loadPersistedPptJobs(): PptJob[] {
       issues: job.issues ?? [],
       attempt: job.attempt ?? 0,
       maxAttempts: job.maxAttempts ?? 3,
+      templateId: job.templateId ?? 'default',
     }));
   } catch {
     return [];
@@ -76,11 +83,23 @@ export function persistPptJobs(jobs: PptJob[]) {
   localStorage.setItem(JOBS_KEY, JSON.stringify(jobs));
 }
 
+export function findPptJobByServerId(
+  jobs: PptJob[],
+  serverJobId: string,
+): PptJob | undefined {
+  const id = serverJobId.trim();
+  if (!id) {
+    return undefined;
+  }
+  return jobs.find(job => job.serverJobId === id);
+}
+
 export function createPptJob(input: {
   prompt: string;
   outline: OutlineDeck;
   model: ResearchModelId;
   attachments?: PromptAttachment[];
+  templateId?: PptTemplateId;
 }): PptJob {
   const now = Date.now();
   return {
@@ -90,6 +109,7 @@ export function createPptJob(input: {
     outline: input.outline,
     model: input.model,
     attachments: input.attachments,
+    templateId: input.templateId ?? 'default',
     status: 'pending',
     phase: 'idle',
     attempt: 0,

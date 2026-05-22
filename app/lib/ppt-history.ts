@@ -1,3 +1,7 @@
+import {
+  extractPptJobIdFromDownloadUrl,
+  pptPreviewPath,
+} from './ppt-job-id';
 import type { OutlineDeck } from './ppt-types';
 import type { ResearchModelId } from './research-models';
 
@@ -8,10 +12,24 @@ export type PptHistoryEntry = {
   outline: OutlineDeck;
   model: ResearchModelId;
   slideCount?: number;
-  downloadUrl: string;
+  serverJobId: string;
+  previewUrl: string;
+  downloadUrl?: string;
   createdAt: number;
   completedAt: number;
 };
+
+export function resolveHistoryPreviewUrl(entry: PptHistoryEntry): string {
+  return entry.previewUrl || pptPreviewPath(entry.serverJobId);
+}
+
+export function resolveHistoryServerJobId(entry: PptHistoryEntry): string {
+  return (
+    entry.serverJobId ??
+    extractPptJobIdFromDownloadUrl(entry.downloadUrl) ??
+    entry.id
+  );
+}
 
 const HISTORY_KEY = 'deep-research:ppt-history';
 const MAX_HISTORY = 50;

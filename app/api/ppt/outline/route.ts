@@ -96,7 +96,7 @@ export async function POST(req: Request) {
         });
         pptLog('LLM 串流大綱中…');
 
-        const stream = streamPptOutlineText({
+        const { stream, resolveFullText } = streamPptOutlineText({
           prompt,
           slideCount,
           pageTextPreset,
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
 
         stream.mergeIntoDataStream(dataStream);
 
-        const fullText = await stream.text;
+        const fullText = await resolveFullText();
         const outline = outlineFromFreeFormatText(prompt, fullText, slideCount);
 
         pptLog(

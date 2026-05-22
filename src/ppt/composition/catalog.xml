@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<compositionCatalog version="1">
+  <composition id="title_hero" layoutId="title">
+    <label>封面 · 主視覺</label>
+    <description>大標題靠左，右側留白與色塊</description>
+    <whenToUse>簡報開場、品牌或主題宣告</whenToUse>
+    <fields>title,subtitle</fields>
+    <boxes>
+      <box key="title" x="8" y="24" w="72" h="20"/>
+      <box key="subtitle" x="10" y="48" w="58" h="14"/>
+    </boxes>
+  </composition>
+  <composition id="title_center" layoutId="title">
+    <label>封面 · 置中</label>
+    <description>標題與副標居中，莊重簡潔</description>
+    <whenToUse>正式報告、執行摘要開場</whenToUse>
+    <fields>title,subtitle</fields>
+    <boxes>
+      <box key="title" x="12" y="30" w="76" h="18"/>
+      <box key="subtitle" x="18" y="52" w="64" h="12"/>
+    </boxes>
+  </composition>
+  <composition id="section_divider" layoutId="section">
+    <label>章節 · 分隔</label>
+    <description>章節標題加大，底線強調</description>
+    <whenToUse>轉換新章節、段落分隔</whenToUse>
+    <fields>title,subtitle</fields>
+    <boxes>
+      <box key="title" x="6" y="28" w="88" h="22"/>
+      <box key="subtitle" x="10" y="54" w="62" h="12"/>
+    </boxes>
+  </composition>
+  <composition id="section_statement" layoutId="section">
+    <label>章節 · 金句</label>
+    <description>單一核心訊息置中偏左</description>
+    <whenToUse>強調一個觀點、過渡頁</whenToUse>
+    <fields>title,subtitle</fields>
+    <boxes>
+      <box key="title" x="10" y="32" w="80" h="24"/>
+      <box key="subtitle" x="14" y="58" w="52" h="10"/>
+    </boxes>
+  </composition>
+  <composition id="bullets_standard" layoutId="bullets">
+    <label>條列 · 標準</label>
+    <description>標題在上、要點區塊偏左</description>
+    <whenToUse>3–5 個平行重點、步驟說明</whenToUse>
+    <fields>title,bullets</fields>
+    <boxes>
+      <box key="title" x="5" y="7" w="62" h="13"/>
+      <box key="body" x="7" y="24" w="58" h="66"/>
+    </boxes>
+  </composition>
+  <composition id="bullets_wide" layoutId="bullets">
+    <label>條列 · 全寬</label>
+    <description>標題窄條、內文橫跨大部分版面</description>
+    <whenToUse>較多文字說明、教學型內容</whenToUse>
+    <fields>title,bullets</fields>
+    <boxes>
+      <box key="title" x="6" y="8" w="88" h="11"/>
+      <box key="body" x="8" y="22" w="84" h="70"/>
+    </boxes>
+  </composition>
+  <composition id="agenda_timeline" layoutId="bullets">
+    <label>議程 · 時間軸</label>
+    <description>左側標題、右側條列如議程</description>
+    <whenToUse>簡報大綱、流程預覽、章節列表</whenToUse>
+    <fields>title,bullets</fields>
+    <boxes>
+      <box key="title" x="5" y="10" w="28" h="78"/>
+      <box key="body" x="36" y="12" w="58" h="76"/>
+    </boxes>
+  </composition>
+  <composition id="two_column_balance" layoutId="two_column">
+    <label>雙欄 · 對稱</label>
+    <description>左右等寬對照</description>
+    <whenToUse>方案 A/B 對比、優缺點</whenToUse>
+    <fields>title,leftTitle,leftBullets,rightTitle,rightBullets</fields>
+    <boxes>
+      <box key="title" x="5" y="6" w="90" h="11"/>
+      <box key="leftTitle" x="5" y="21" w="44" h="9"/>
+      <box key="leftBody" x="5" y="32" w="44" h="60"/>
+      <box key="rightTitle" x="51" y="21" w="44" h="9"/>
+      <box key="rightBody" x="51" y="32" w="44" h="60"/>
+    </boxes>
+  </composition>
+  <composition id="two_column_stagger" layoutId="two_column">
+    <label>雙欄 · 錯位</label>
+    <description>右欄略上移，動態感</description>
+    <whenToUse>前後對比、現況 vs 目標</whenToUse>
+    <fields>title,leftTitle,leftBullets,rightTitle,rightBullets</fields>
+    <boxes>
+      <box key="title" x="5" y="6" w="90" h="11"/>
+      <box key="leftTitle" x="5" y="21" w="44" h="9"/>
+      <box key="leftBody" x="5" y="32" w="44" h="60"/>
+      <box key="rightTitle" x="52" y="18" w="43" h="9"/>
+      <box key="rightBody" x="52" y="29" w="43" h="63"/>
+    </boxes>
+  </composition>
+  <composition id="quote_highlight" layoutId="quote">
+    <label>引用 · 金句</label>
+    <description>大段引文 + 出處</description>
+    <whenToUse>客戶語錄、研究結論、名言支撐論點</whenToUse>
+    <fields>title,quote,attribution</fields>
+    <boxes>
+      <box key="title" x="10" y="12" w="40" h="8"/>
+      <box key="body" x="8" y="24" w="84" h="52"/>
+      <box key="subtitle" x="12" y="78" w="50" h="10"/>
+    </boxes>
+  </composition>
+  <composition id="stat_metric" layoutId="stat">
+    <label>數據 · 指標</label>
+    <description>大數字強調 + 說明</description>
+    <whenToUse>KPI、成長率、市場數據、調研結果</whenToUse>
+    <fields>title,value,context,bullets</fields>
+    <boxes>
+      <box key="title" x="8" y="10" w="50" h="12"/>
+      <box key="subtitle" x="8" y="26" w="55" h="28"/>
+      <box key="body" x="8" y="58" w="84" h="34"/>
+    </boxes>
+  </composition>
+  <composition id="closing_cta" layoutId="closing">
+    <label>結尾 · 行動</label>
+    <description>總結標題、副標與下一步</description>
+    <whenToUse>簡報收尾、CTA、Q&amp;A 前</whenToUse>
+    <fields>title,subtitle,bullets</fields>
+    <boxes>
+      <box key="title" x="12" y="14" w="76" h="14"/>
+      <box key="subtitle" x="14" y="32" w="68" h="10"/>
+      <box key="body" x="18" y="46" w="64" h="40"/>
+    </boxes>
+  </composition>
+  <composition id="title_minimal" layoutId="title">
+    <label>封面 · 極簡</label>
+    <description>大標題置中偏上、極少裝飾</description>
+    <whenToUse>內部簡報、快速同步會議</whenToUse>
+    <fields>title,subtitle</fields>
+    <boxes>
+      <box key="title" x="14" y="34" w="72" h="16"/>
+      <box key="subtitle" x="20" y="54" w="60" h="10"/>
+    </boxes>
+  </composition>
+  <composition id="bullets_photo_right" layoutId="bullets">
+    <label>條列 · 右側留白</label>
+    <description>內容靠左，右側預留圖表或插圖區</description>
+    <whenToUse>搭配截圖、架構圖、產品畫面說明</whenToUse>
+    <fields>title,bullets</fields>
+    <boxes>
+      <box key="title" x="5" y="8" w="48" h="12"/>
+      <box key="body" x="5" y="22" w="48" h="70"/>
+    </boxes>
+  </composition>
+  <composition id="bullets_dense" layoutId="bullets">
+    <label>條列 · 緊湊</label>
+    <description>標題小、內文區塊加高</description>
+    <whenToUse>6–8 個細項、檢查清單</whenToUse>
+    <fields>title,bullets</fields>
+    <boxes>
+      <box key="title" x="6" y="6" w="88" h="9"/>
+      <box key="body" x="8" y="18" w="84" h="76"/>
+    </boxes>
+  </composition>
+  <composition id="section_minimal" layoutId="section">
+    <label>章節 · 極簡</label>
+    <description>單行大標、大量留白</description>
+    <whenToUse>低調過場、Part 1/2/3</whenToUse>
+    <fields>title,subtitle</fields>
+    <boxes>
+      <box key="title" x="12" y="38" w="76" h="18"/>
+      <box key="subtitle" x="14" y="58" w="40" h="8"/>
+    </boxes>
+  </composition>
+  <composition id="stat_comparison" layoutId="stat">
+    <label>數據 · 雙指標</label>
+    <description>主指標放大、副標補充第二數據</description>
+    <whenToUse>前後對比數字、目標 vs 實際</whenToUse>
+    <fields>title,value,context,bullets</fields>
+    <boxes>
+      <box key="title" x="6" y="12" w="88" h="10"/>
+      <box key="subtitle" x="6" y="24" w="42" h="32"/>
+      <box key="body" x="52" y="24" w="42" h="58"/>
+    </boxes>
+  </composition>
+  <composition id="closing_minimal" layoutId="closing">
+    <label>結尾 · 簡潔</label>
+    <description>感謝與聯絡方式置中</description>
+    <whenToUse>Q&amp;A 頁、聯絡資訊</whenToUse>
+    <fields>title,subtitle,bullets</fields>
+    <boxes>
+      <box key="title" x="16" y="28" w="68" h="14"/>
+      <box key="subtitle" x="18" y="46" w="64" h="10"/>
+      <box key="body" x="22" y="60" w="56" h="28"/>
+    </boxes>
+  </composition>
+</compositionCatalog>

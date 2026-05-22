@@ -2,7 +2,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 
 import { contentDispositionAttachment } from '@/http-headers';
-import { PPT_JOBS_DIR, resolvePptJobFile } from '@/ppt/jobs';
+import { getPptJobsBaseDir, resolvePptJobFile } from '@/ppt/jobs';
 
 export const runtime = 'nodejs';
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const relative = path.relative(PPT_JOBS_DIR, filePath);
+  const relative = path.relative(getPptJobsBaseDir(), filePath);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
     return Response.json({ error: 'Invalid file path' }, { status: 400 });
   }

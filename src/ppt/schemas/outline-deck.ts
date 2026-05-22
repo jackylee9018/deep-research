@@ -1,10 +1,15 @@
 import { z } from 'zod';
 
 import { pptLayoutIdSchema } from './layout-catalog';
+import { outlineMediaPlanSchema } from './slide-media';
 
 export const outlineSlideSchema = z.object({
   index: z.number().int().min(1),
   layoutId: pptLayoutIdSchema,
+  /** Composition preset from composition/catalog (controls layout + box geometry). */
+  compositionId: z.string().min(1).max(64).optional(),
+  /** When enabled, orchestrator fetches an image into slide.image before export. */
+  media: outlineMediaPlanSchema.optional(),
   headline: z.string().min(1).max(90),
   bulletSummary: z.array(z.string().min(1).max(90)).min(1).max(5),
 });

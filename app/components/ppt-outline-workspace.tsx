@@ -17,7 +17,9 @@ import type { ResearchModelId } from '../lib/research-models';
 import { RESEARCH_MODEL_LABELS } from '../lib/research-models';
 import { PptOutlineActivityBar } from './ppt-outline-activity-bar';
 import { PptOutlineEditor } from './ppt-outline-editor';
+import { PptTemplateSelect } from './ppt-template-select';
 import { ResearchModelSelect } from './research-model-select';
+import type { PptTemplateId } from '../lib/ppt-templates';
 
 type ContentView = 'free' | 'slides';
 
@@ -28,6 +30,8 @@ type PptOutlineWorkspaceProps = {
   onPageTextPresetChange: (value: PptPageTextPreset) => void;
   model: ResearchModelId;
   onModelChange: (model: ResearchModelId) => void;
+  pptTemplateId: PptTemplateId;
+  onPptTemplateIdChange: (value: PptTemplateId) => void;
   additionalNotes: string;
   onAdditionalNotesChange: (value: string) => void;
   onRegenerateOutline: () => void;
@@ -39,6 +43,8 @@ type PptOutlineWorkspaceProps = {
   streamingFreeText?: string;
   streamingStatus?: string;
   error?: string;
+  /** When set via PPT_OUTPUT_DIR, shown in settings as the save root. */
+  pptOutputDir?: string | null;
   generationFeedback?: ReactNode;
 };
 
@@ -53,6 +59,8 @@ export function PptOutlineWorkspace({
   onPageTextPresetChange,
   model,
   onModelChange,
+  pptTemplateId,
+  onPptTemplateIdChange,
   additionalNotes,
   onAdditionalNotesChange,
   onRegenerateOutline,
@@ -64,6 +72,7 @@ export function PptOutlineWorkspace({
   streamingFreeText,
   streamingStatus,
   error,
+  pptOutputDir,
   generationFeedback,
 }: PptOutlineWorkspaceProps) {
   const [contentView, setContentView] = useState<ContentView>('free');
@@ -247,6 +256,16 @@ export function PptOutlineWorkspace({
             <p className="ppt-outline-hint">{RESEARCH_MODEL_LABELS[model]}</p>
           </div>
 
+          {pptOutputDir ? (
+            <div className="ppt-outline-panel">
+              <p className="ppt-outline-panel-label">PPTX 輸出目錄</p>
+              <p className="ppt-outline-hint ppt-output-dir-hint">
+                已設定 <code>{pptOutputDir}</code>；每次生成會建立子資料夾{' '}
+                <code>{'{jobId}/deck.pptx'}</code>。
+              </p>
+            </div>
+          ) : null}
+
           <button
             type="button"
             className="ppt-outline-secondary-action"
@@ -340,10 +359,20 @@ export function PptOutlineWorkspace({
 
         <aside className="ppt-outline-col ppt-outline-col--notes">
           <div className="ppt-outline-col-head">
-            <h2>附加說明</h2>
+            <h2>風格與說明</h2>
+          </div>
+
+          <div className="ppt-outline-panel ppt-outline-panel--templates">
+            <PptTemplateSelect
+              variant="rail"
+              value={pptTemplateId}
+              onChange={onPptTemplateIdChange}
+              disabled={busy || generating}
+            />
           </div>
 
           <label className="ppt-outline-field ppt-outline-notes-field">
+            <span className="ppt-outline-field-label">附加說明</span>
             <span className="sr-only">附加說明</span>
             <textarea
               rows={6}

@@ -16,10 +16,24 @@
     "maxBulletChars": 95
   },
   "two_column": {
-    "templateLayoutIndex": 3,
+    "templateLayoutIndex": 4,
     "maxTitleChars": 70,
     "maxBullets": 4,
     "maxBulletChars": 80
+  },
+  "quote": {
+    "templateLayoutIndex": 1,
+    "maxTitleChars": 40,
+    "maxSubtitleChars": 80,
+    "maxBullets": 1,
+    "maxBulletChars": 280
+  },
+  "stat": {
+    "templateLayoutIndex": 1,
+    "maxTitleChars": 60,
+    "maxSubtitleChars": 24,
+    "maxBullets": 3,
+    "maxBulletChars": 90
   },
   "closing": {
     "templateLayoutIndex": 4,

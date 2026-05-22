@@ -13,8 +13,8 @@ export type PptProgressPhase =
 const PHASE_LABELS: Record<PptProgressPhase, string> = {
   idle: '待機',
   planning: '規劃內容',
-  generating: '生成簡報',
-  validating: '驗證輸出',
+  generating: '規劃內容',
+  validating: '檢查內容',
   done: '完成',
   failed: '失敗',
 };
@@ -28,6 +28,7 @@ type PptProgressPanelProps = {
   error?: string;
   downloadUrl?: string;
   slideCount?: number;
+  readySlideCount?: number;
   onDismiss?: () => void;
 };
 
@@ -40,6 +41,7 @@ export function PptProgressPanel({
   error,
   downloadUrl,
   slideCount,
+  readySlideCount,
   onDismiss,
 }: PptProgressPanelProps) {
   const showAttempt =
@@ -63,6 +65,14 @@ export function PptProgressPanel({
           {showAttempt ? (
             <span className="ppt-attempt">
               嘗試 {attempt}/{maxAttempts}
+            </span>
+          ) : null}
+          {readySlideCount != null &&
+          slideCount != null &&
+          phase !== 'done' &&
+          phase !== 'failed' ? (
+            <span className="ppt-slide-count-badge">
+              {readySlideCount}/{slideCount} 頁
             </span>
           ) : null}
           {slideCount != null && phase === 'done' ? (

@@ -54,9 +54,7 @@ export function PptBackgroundToast() {
             ? `（${latestCompleted.slideCount} 頁）`
             : ''}
         </span>
-        <a href={latestCompleted.downloadUrl} download>
-          下載 PPTX
-        </a>
+        <Link href={latestCompleted.previewUrl}>查看預覽</Link>
         <button
           type="button"
           className="ppt-bg-toast-dismiss"

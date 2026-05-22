@@ -160,23 +160,39 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - **Home** — landing UI styled like Open WebUI; pressing Enter on the prompt opens your Open WebUI instance with the [official `q` URL parameter](https://docs.openwebui.com/features/chat-conversations/chat-features/url-params) (auto-submits the first message).
 - **Deep Research** (`/research`) — iterative research flow with follow-up questions, live progress, and exportable reports.
-- **PPT Agent** (`/ppt`) — generates an editable outline first, then uses LangGraph plus a Python `python-pptx` skill to create and validate a PPTX.
+- **PPT Agent** (`/ppt`) — generates an editable outline first, then uses LangGraph plus **PptxGenJS** (default) or an optional Python `python-pptx` skill to create and validate an editable PPTX.
 
 ### PPT Agent
 
-Install the Python skill dependency when running outside Docker:
+By default, PPTX export runs in Node via **PptxGenJS** (`PPTX_EXPORT_BACKEND=nodejs`). Text, bullets, and two-column layouts are native PowerPoint shapes (editable in PowerPoint).
+
+Run a local export check:
 
 ```bash
-python3 -m pip install -r skills/pptx/requirements.txt
+npm run ppt:export:check
 ```
 
-Run a local skill check:
+To use the legacy Python exporter instead:
 
 ```bash
+# In .env.local
+PPTX_EXPORT_BACKEND=python
+python3 -m pip install -r skills/pptx/requirements.txt
 npm run ppt:skill:check
 ```
 
-The skill uses `templates/default.pptx` when present. If that file is missing, it falls back to a generated presentation with the same layout contract defined in `skills/pptx/layout_catalog.json`.
+The Python skill uses slide **layouts and placeholders** from `templates/registry.json` (`default` / `corporate` / `minimal`). Export tries Python template layouts first when `PPT_TEMPLATE_LAYOUTS` is not `false` (see `templates/README.md`). The Node exporter uses programmatic layouts with per-template colors from the same registry.
+
+Save generated decks to a fixed directory instead of the OS temp folder:
+
+```bash
+# In .env.local — each job writes to {PPT_OUTPUT_DIR}/{jobId}/deck.pptx
+PPT_OUTPUT_DIR="/absolute/path/to/ppt-output"
+```
+
+Restart `npm run dev:web` after changing env. The web UI shows the server path on success; download still works via `/api/ppt/download?jobId=...`.
+
+After a successful run, the app navigates to `/ppt/preview?jobId=...` where you can edit slide text in the browser. Click **匯出 PPTX** (top-right) to render and download the PowerPoint file. Generation only plans content; export is a separate step.
 
 Configure Open WebUI in `.env.local` (change the URL anytime — **no rebuild** needed if you use `OPENWEBUI_URL`):
 

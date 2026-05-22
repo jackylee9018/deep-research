@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getLlmEnvStatus } from '@/ai/providers';
 
 import { resolveAppDisplayName } from '../../lib/app-brand';
+import { getPptJobsBaseDir, isPptOutputDirConfigured } from '@/ppt/jobs';
 
 export const runtime = 'nodejs';
 
@@ -28,5 +29,6 @@ export async function GET() {
     llmConfigured: llm.configured,
     llmProvider: llm.provider,
     llmModelId: llm.modelId,
+    pptOutputDir: isPptOutputDirConfigured() ? getPptJobsBaseDir() : null,
   });
 }

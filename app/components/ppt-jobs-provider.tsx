@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { pptPreviewPath } from '../lib/ppt-job-id';
 import {
   createPptJob,
   loadPersistedPptJobs,
@@ -26,17 +27,21 @@ import {
 } from '../lib/ppt-history';
 import type { OutlineDeck } from '../lib/ppt-types';
 import {
+  recoverPptPreviewFromServer,
   runPptGenerationStream,
   type PptStreamDataPart,
 } from '../lib/ppt-stream';
 import type { PromptAttachment } from '../lib/prompt-attachments';
 import type { ResearchModelId } from '../lib/research-models';
 
+import type { PptTemplateId } from '../lib/ppt-templates';
+
 type EnqueueInput = {
   prompt: string;
   outline: OutlineDeck;
   model: ResearchModelId;
   attachments?: PromptAttachment[];
+  templateId?: PptTemplateId;
 };
 
 function migrateCompletedJobsToHistory(jobs: PptJob[]): PptJob[] {
@@ -46,7 +51,7 @@ function migrateCompletedJobsToHistory(jobs: PptJob[]): PptJob[] {
   for (const job of jobs) {
     if (
       job.status === 'completed' &&
-      job.downloadUrl &&
+      job.serverJobId &&
       !historyIds.has(job.id)
     ) {
       appendPptHistory({
@@ -56,6 +61,8 @@ function migrateCompletedJobsToHistory(jobs: PptJob[]): PptJob[] {
         outline: job.outline,
         model: job.model,
         slideCount: job.slideCount,
+        serverJobId: job.serverJobId,
+        previewUrl: job.previewUrl ?? pptPreviewPath(job.serverJobId),
         downloadUrl: job.downloadUrl,
         createdAt: job.createdAt,
         completedAt: job.updatedAt,
@@ -98,10 +105,23 @@ function applyStreamPart(job: PptJob, part: PptStreamDataPart): Partial<PptJob> 
   if (part.type === 'log') {
     return { logs: [...job.logs, part.message] };
   }
-  if (part.type === 'complete') {
+  if (part.type === 'job') {
+    return { serverJobId: part.jobId };
+  }
+  if (part.type === 'slideReady') {
     return {
-      downloadUrl: part.downloadUrl,
+      serverJobId: part.jobId,
+      readySlideCount: part.readyCount,
+      slideCount: part.total,
+      phase: 'generating',
+    };
+  }
+  if (part.type === 'previewReady') {
+    return {
+      serverJobId: part.jobId,
+      previewUrl: part.previewUrl,
       slideCount: part.slideCount,
+      readySlideCount: part.slideCount,
       phase: 'done',
     };
   }
@@ -150,17 +170,56 @@ export function PptJobsProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       abortControllers.current.set(jobId, controller);
 
-      updateJob(jobId, { status: 'running', phase: 'planning', error: undefined });
+      updateJob(jobId, {
+        status: 'running',
+        phase: 'generating',
+        error: undefined,
+        readySlideCount: 0,
+      });
 
       let streamFailed = false;
+      let streamServerJobId: string | undefined;
+      let streamPreviewUrl: string | undefined;
+      let streamSlideCount: number | undefined;
+      let streamPhase: PptJobPhase | undefined;
+      let streamIssues: PptJob['issues'] = [];
+
+      const completeJob = (
+        serverJobId: string,
+        previewUrl: string,
+        slideCount?: number,
+      ) => {
+        updateJob(jobId, {
+          status: 'completed',
+          phase: 'done',
+          serverJobId,
+          previewUrl,
+          slideCount,
+          error: undefined,
+        });
+        appendPptHistory({
+          id: jobId,
+          prompt: job.prompt,
+          outlineTitle: job.outlineTitle,
+          outline: job.outline,
+          model: job.model,
+          slideCount,
+          serverJobId,
+          previewUrl,
+          createdAt: job.createdAt,
+          completedAt: Date.now(),
+        });
+        setHistory(loadPptHistory());
+      };
 
       try {
-        await runPptGenerationStream(
+        const streamResult = await runPptGenerationStream(
           {
             prompt: job.prompt,
             outline: job.outline,
             model: job.model,
             attachments: job.attachments,
+            templateId: job.templateId,
           },
           {
             onData: part => {
@@ -168,9 +227,26 @@ export function PptJobsProvider({ children }: { children: ReactNode }) {
               if (!latest) {
                 return;
               }
+              if (part.type === 'job') {
+                streamServerJobId = part.jobId;
+              }
+              if (part.type === 'previewReady') {
+                streamServerJobId = part.jobId;
+                streamPreviewUrl = part.previewUrl;
+                streamSlideCount = part.slideCount;
+              }
+              if (part.type === 'phase') {
+                streamPhase = part.phase as PptJobPhase;
+              }
+              if (part.type === 'issues') {
+                streamIssues = part.items;
+              }
               updateJob(jobId, applyStreamPart(latest, part));
             },
             onError: message => {
+              if (streamPreviewUrl) {
+                return;
+              }
               streamFailed = true;
               updateJob(jobId, {
                 status: 'failed',
@@ -182,7 +258,39 @@ export function PptJobsProvider({ children }: { children: ReactNode }) {
           controller.signal,
         );
 
-        if (streamFailed || controller.signal.aborted) {
+        if (controller.signal.aborted) {
+          updateJob(jobId, {
+            status: 'failed',
+            phase: 'failed',
+            error: '已取消',
+          });
+          return;
+        }
+
+        if (streamResult.ok) {
+          completeJob(
+            streamResult.preview.jobId,
+            streamResult.preview.previewUrl,
+            streamResult.preview.slideCount,
+          );
+          return;
+        }
+
+        streamServerJobId ??= streamResult.serverJobId;
+
+        if (streamServerJobId) {
+          const recovered = await recoverPptPreviewFromServer(streamServerJobId);
+          if (recovered) {
+            completeJob(
+              recovered.jobId,
+              recovered.previewUrl,
+              recovered.slideCount,
+            );
+            return;
+          }
+        }
+
+        if (streamFailed) {
           return;
         }
 
@@ -191,33 +299,20 @@ export function PptJobsProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        if (latest.downloadUrl) {
-          updateJob(jobId, { status: 'completed', phase: 'done' });
-          appendPptHistory({
-            id: jobId,
-            prompt: job.prompt,
-            outlineTitle: job.outlineTitle,
-            outline: job.outline,
-            model: job.model,
-            slideCount: latest.slideCount,
-            downloadUrl: latest.downloadUrl,
-            createdAt: job.createdAt,
-            completedAt: Date.now(),
-          });
-          setHistory(loadPptHistory());
-        } else {
-          const issueMessage = latest.issues[0]?.message;
-          updateJob(jobId, {
-            status: 'failed',
-            phase: 'failed',
-            error:
-              latest.error ??
-              issueMessage ??
-              (latest.phase === 'failed'
-                ? '驗證未通過，請調整大綱後再試'
-                : '生成未完成'),
-          });
-        }
+        const phase = streamPhase ?? latest.phase;
+        const issues = streamIssues.length ? streamIssues : latest.issues;
+        const issueMessage = issues[0]?.message;
+        updateJob(jobId, {
+          status: 'failed',
+          phase: 'failed',
+          error:
+            streamResult.error ??
+            latest.error ??
+            issueMessage ??
+            (phase === 'failed'
+              ? '驗證未通過，請調整大綱後再試'
+              : '生成未完成'),
+        });
       } catch (e) {
         if (controller.signal.aborted) {
           updateJob(jobId, {
@@ -226,6 +321,17 @@ export function PptJobsProvider({ children }: { children: ReactNode }) {
             error: '已取消',
           });
           return;
+        }
+        if (streamServerJobId) {
+          const recovered = await recoverPptPreviewFromServer(streamServerJobId);
+          if (recovered) {
+            completeJob(
+              recovered.jobId,
+              recovered.previewUrl,
+              recovered.slideCount,
+            );
+            return;
+          }
         }
         updateJob(jobId, {
           status: 'failed',

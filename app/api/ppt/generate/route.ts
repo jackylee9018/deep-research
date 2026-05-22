@@ -4,9 +4,14 @@ import { runWithResearchModel } from '@/ai/model-context';
 import { assertLlmConfigured } from '@/ai/providers';
 import { resolveResearchModelId } from '@/ai/research-models';
 import type { PromptAttachment } from '@/prompt-attachments';
-import { buildPptGraph } from '@/ppt/graph/build-graph';
-import { createPptJobPaths } from '@/ppt/jobs';
+import { createPptJobPaths, resolvePptJobDir } from '@/ppt/jobs';
+import { resolveSlideImages } from '@/ppt/media/resolve-slide-images';
 import { pptLog, pptLogError } from '@/ppt/log';
+import { planPptContent, planPptContentBySlide } from '@/ppt/planner';
+import { persistDeckPlan } from '@/ppt/persist-deck-plan';
+import { countReadySlides } from '@/ppt/deck-plan-progress';
+import { buildSkeletonDeckPlan } from '@/ppt/skeleton-deck-plan';
+import { runPptExport } from '@/ppt/export/run-ppt-export';
 import { outlineDeckSchema } from '@/ppt/schemas';
 
 export const runtime = 'nodejs';
@@ -18,19 +23,11 @@ type PptGenerateRequestBody = {
   outline?: unknown;
   model?: string;
   attachments?: PromptAttachment[];
+  templateId?: string;
 };
 
-function phaseForNode(nodeName: string) {
-  if (nodeName === 'contentPlanner') {
-    return 'planning';
-  }
-  if (nodeName === 'generatePptx') {
-    return 'generating';
-  }
-  if (nodeName === 'validate') {
-    return 'validating';
-  }
-  return 'planning';
+function previewUrlForJob(jobId: string) {
+  return `/ppt/preview?jobId=${encodeURIComponent(jobId)}`;
 }
 
 export async function POST(req: Request) {
@@ -63,14 +60,14 @@ export async function POST(req: Request) {
       )
     : undefined;
 
-  const outlineTitle = outlineParse.data.title.trim() || '未命名簡報';
-  const slideCount = outlineParse.data.slides.length;
+  const outline = outlineParse.data;
+  const outlineTitle = outline.title.trim() || '未命名簡報';
+  const slideCount = outline.slides.length;
   pptLog(
-    `開始生成：「${outlineTitle}」｜${slideCount} 頁｜模型 ${modelId}${
+    `開始生成內容：「${outlineTitle}」｜${slideCount} 頁｜模型 ${modelId}${
       attachments?.length ? `｜${attachments.length} 個附件` : ''
     }`,
   );
-  pptLog(`需求摘要：${prompt.slice(0, 120)}${prompt.length > 120 ? '…' : ''}`);
 
   try {
     assertLlmConfigured();
@@ -84,155 +81,121 @@ export async function POST(req: Request) {
     execute: async dataStream =>
       runWithResearchModel(modelId, async () => {
         const { jobId, outputPath } = await createPptJobPaths();
+        const templateId = body.templateId?.trim() || 'default';
+        const maxAttempts = 3;
+
         pptLog(`工作目錄 jobId=${jobId}`);
-        pptLog(`輸出路徑 ${outputPath}`);
-        const graph = buildPptGraph();
+        dataStream.writeData({ type: 'job', jobId });
+        dataStream.writeData({ type: 'phase', phase: 'generating' });
+        dataStream.writeData({ type: 'attempt', n: 0, max: maxAttempts });
 
-        dataStream.writeData({ type: 'phase', phase: 'planning' });
-        dataStream.writeData({ type: 'attempt', n: 0, max: 3 });
+        const skeleton = buildSkeletonDeckPlan(outline, templateId);
+        await persistDeckPlan(jobId, skeleton);
+        dataStream.writeData({
+          type: 'slideReady',
+          jobId,
+          readyCount: 0,
+          total: slideCount,
+        });
 
-        let finalState: Record<string, any> = {
-          userPrompt: prompt,
+        const jobDir = resolvePptJobDir(jobId);
+
+        let deckPlan = await planPptContentBySlide({
+          prompt,
+          outline,
           attachments,
-          confirmedOutline: outlineParse.data,
-          attempt: 0,
-          maxAttempts: 3,
-          issues: [],
-          success: false,
-          outputPath,
-        };
-
-        const stream = await graph.stream(
-          {
-            userPrompt: prompt,
-            attachments,
-            confirmedOutline: outlineParse.data,
-            attempt: 0,
-            maxAttempts: 3,
-            issues: [],
-            success: false,
-            outputPath,
+          templateId,
+          onSlideReady: async (partial, readyCount, total) => {
+            const withMedia = await resolveSlideImages(partial, jobDir);
+            await persistDeckPlan(jobId, withMedia);
+            dataStream.writeData({
+              type: 'slideReady',
+              jobId,
+              readyCount,
+              total,
+            });
           },
-          { streamMode: 'updates' },
-        );
+        });
 
-        for await (const update of stream) {
-          const entries = Object.entries(
-            update as Record<string, Record<string, unknown>>,
-          );
-          for (const [nodeName, nodeUpdate] of entries) {
-            finalState = { ...finalState, ...nodeUpdate };
-            const phase = phaseForNode(nodeName);
-            const attempt =
-              typeof nodeUpdate.attempt === 'number'
-                ? nodeUpdate.attempt
-                : undefined;
-            const issues = Array.isArray(nodeUpdate.issues)
-              ? nodeUpdate.issues
-              : [];
-            const nodeSuccess =
-              typeof nodeUpdate.success === 'boolean'
-                ? nodeUpdate.success
-                : undefined;
+        deckPlan = await resolveSlideImages(deckPlan, jobDir);
 
-            pptLog(
-              `節點完成：${nodeName} → ${phase}` +
-                (attempt != null ? `｜嘗試 ${attempt}/3` : '') +
-                (nodeSuccess != null ? `｜success=${nodeSuccess}` : '') +
-                (issues.length ? `｜${issues.length} 個 issue` : ''),
-            );
-            for (const issue of issues) {
-              if (
-                issue &&
-                typeof issue === 'object' &&
-                'message' in issue &&
-                typeof issue.message === 'string'
-              ) {
-                pptLog(`  · ${issue.message}`);
-              }
-            }
-            if (
-              typeof nodeUpdate.error === 'string' &&
-              nodeUpdate.error.trim()
-            ) {
-              pptLog(`  錯誤：${nodeUpdate.error}`);
-            }
-            if (typeof nodeUpdate.filePath === 'string') {
-              pptLog(`  檔案：${nodeUpdate.filePath}`);
-            }
+        dataStream.writeData({ type: 'phase', phase: 'validating' });
 
-            dataStream.writeData({
-              type: 'phase',
-              phase,
-            });
-            dataStream.writeData({
-              type: 'log',
-              message: `${nodeName} completed`,
-            });
+        let attempt = 0;
+        let issues: { code: string; message: string }[] = [];
+        let success = false;
 
-            if (attempt != null) {
-              dataStream.writeData({
-                type: 'attempt',
-                n: attempt,
-                max: 3,
-              });
-            }
+        while (attempt < maxAttempts) {
+          attempt += 1;
+          dataStream.writeData({ type: 'attempt', n: attempt, max: maxAttempts });
 
-            if (issues.length) {
-              dataStream.writeData({
-                type: 'issues',
-                items: issues,
-              });
-            }
-
-            if (
-              nodeName === 'validate' &&
-              nodeUpdate.success === true &&
-              typeof nodeUpdate.slideCount === 'number'
-            ) {
-              dataStream.writeData({
-                type: 'complete',
-                downloadUrl: `/api/ppt/download?jobId=${encodeURIComponent(jobId)}`,
-                slideCount: nodeUpdate.slideCount,
-              });
-            }
-          }
-        }
-
-        if (finalState.success && finalState.filePath) {
-          const slides =
-            finalState.slideCount ?? outlineParse.data.slides.length;
-          pptLog(
-            `生成成功｜${slides} 頁｜下載 /api/ppt/download?jobId=${jobId}`,
-          );
-          dataStream.writeData({ type: 'phase', phase: 'done' });
-          dataStream.writeData({
-            type: 'complete',
-            downloadUrl: `/api/ppt/download?jobId=${encodeURIComponent(jobId)}`,
-            slideCount: slides,
+          const result = await runPptExport({
+            action: 'validate',
+            plan: deckPlan,
           });
-        } else {
-          const issues = Array.isArray(finalState.issues)
-            ? finalState.issues
-            : [];
-          pptLogError(
-            `生成失敗｜最終嘗試 ${finalState.attempt ?? '?'}/3｜${issues.length} 個 issue`,
+
+          if (result.success) {
+            success = true;
+            issues = [];
+            pptLog(`驗證通過｜嘗試 ${attempt}/${maxAttempts}`);
+            break;
+          }
+
+          issues = result.issues;
+          pptLog(
+            `驗證未過｜嘗試 ${attempt}/${maxAttempts}｜${issues.length} 個 issue`,
           );
           for (const issue of issues) {
-            if (issue?.message) {
-              pptLogError(`  · ${issue.message}`);
-            }
+            pptLog(`  · ${issue.message}`);
           }
-          dataStream.writeData({ type: 'phase', phase: 'failed' });
-          dataStream.writeData({ type: 'issues', items: finalState.issues });
+
+          dataStream.writeData({ type: 'issues', items: issues });
+
+          if (attempt < maxAttempts) {
+            dataStream.writeData({ type: 'phase', phase: 'planning' });
+            deckPlan = await planPptContent({
+              prompt,
+              outline,
+              issues,
+              attachments,
+              templateId,
+            });
+            deckPlan = await resolveSlideImages(deckPlan, jobDir);
+            await persistDeckPlan(jobId, deckPlan);
+            dataStream.writeData({
+              type: 'slideReady',
+              jobId,
+              readyCount: countReadySlides(deckPlan),
+              total: slideCount,
+            });
+            dataStream.writeData({ type: 'phase', phase: 'validating' });
+          }
         }
+
+        if (success) {
+          await persistDeckPlan(jobId, deckPlan);
+          const previewUrl = previewUrlForJob(jobId);
+          pptLog(`內容就緒｜${deckPlan.slides.length} 頁｜預覽 ${previewUrl}`);
+          dataStream.writeData({ type: 'phase', phase: 'done' });
+          dataStream.writeData({
+            type: 'previewReady',
+            jobId,
+            previewUrl,
+            slideCount: deckPlan.slides.length,
+          });
+        } else {
+          pptLogError(
+            `生成失敗｜驗證 ${attempt}/${maxAttempts} 次未通過｜${issues.length} 個 issue`,
+          );
+          dataStream.writeData({ type: 'phase', phase: 'failed' });
+          dataStream.writeData({ type: 'issues', items: issues });
+        }
+
+        void outputPath;
       }),
     onError: error => {
       const message = error instanceof Error ? error.message : String(error);
       pptLogError('串流錯誤：', message);
-      if (error instanceof Error && error.stack) {
-        pptLogError(error.stack);
-      }
       return message;
     },
   });

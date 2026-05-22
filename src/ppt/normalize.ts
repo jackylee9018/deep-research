@@ -3,12 +3,18 @@ import { z } from 'zod';
 import {
   deckPlanSchema,
   outlineDeckSchema,
+  outlineMediaPlanSchema,
   pptLayoutIdSchema,
   type DeckPlan,
   type DeckSlide,
   type OutlineDeck,
+  type OutlineMedia,
   type PptLayoutId,
 } from './schemas';
+import {
+  getCompositionBoxes,
+  resolveOutlineComposition,
+} from './composition/load-catalog';
 import { PPT_LAYOUT_CATALOG, PPT_LAYOUT_IDS } from './schemas/layout-catalog';
 
 function clip(text: string, max: number, fallback = '待補內容'): string {
@@ -34,6 +40,20 @@ function clipBullets(items: string[] | undefined, maxItems: number, maxChars: nu
   return bullets.slice(0, maxItems);
 }
 
+function normalizeOutlineMedia(
+  raw: OutlineGeneration['slides'][number]['media'],
+): OutlineMedia | undefined {
+  if (!raw || raw.enabled !== true) {
+    return undefined;
+  }
+  const parsed = outlineMediaPlanSchema.safeParse({
+    enabled: true,
+    brief: raw.brief?.trim() || undefined,
+    role: raw.role,
+  });
+  return parsed.success ? parsed.data : { enabled: true };
+}
+
 function coerceLayoutId(raw: string | undefined, fallback: PptLayoutId): PptLayoutId {
   const normalized = (raw ?? '')
     .trim()
@@ -57,6 +77,17 @@ function coerceLayoutId(raw: string | undefined, fallback: PptLayoutId): PptLayo
   if (normalized.includes('close') || normalized.includes('end') || normalized.includes('summary')) {
     return 'closing';
   }
+  if (normalized.includes('quote') || normalized.includes('citation')) {
+    return 'quote';
+  }
+  if (
+    normalized.includes('stat') ||
+    normalized.includes('metric') ||
+    normalized.includes('kpi') ||
+    normalized.includes('number')
+  ) {
+    return 'stat';
+  }
 
   return fallback;
 }
@@ -69,6 +100,14 @@ export const outlineDeckGenerationSchema = z.object({
     z.object({
       index: z.union([z.number(), z.string()]).optional(),
       layoutId: z.string().optional(),
+      compositionId: z.string().optional(),
+      media: z
+        .object({
+          enabled: z.boolean().optional(),
+          brief: z.string().optional(),
+          role: z.string().optional(),
+        })
+        .optional(),
       headline: z.string().optional(),
       bulletSummary: z.array(z.string()).optional(),
     }),
@@ -85,6 +124,10 @@ export const deckSlideGenerationSchema = z.object({
   rightTitle: z.string().optional(),
   leftBullets: z.array(z.string()).optional(),
   rightBullets: z.array(z.string()).optional(),
+  quote: z.string().optional(),
+  attribution: z.string().optional(),
+  value: z.string().optional(),
+  context: z.string().optional(),
   headline: z.string().optional(),
 });
 
@@ -163,6 +206,49 @@ function buildDeckSlide(
           80,
         ),
       };
+    case 'quote':
+      return {
+        index: outlineSlide.index,
+        layoutId: 'quote',
+        title: clipOptional(generated?.title ?? outlineSlide.headline, 40),
+        quote: clip(
+          generated?.quote ??
+            generated?.bullets?.[0] ??
+            outlineSlide.bulletSummary[0] ??
+            '待補引文',
+          280,
+        ),
+        attribution: clipOptional(
+          generated?.attribution ??
+            generated?.subtitle ??
+            outlineSlide.bulletSummary[1],
+          80,
+        ),
+      };
+    case 'stat': {
+      const supporting = clipBullets(
+        generated?.bullets ?? outlineSlide.bulletSummary.slice(2),
+        3,
+        90,
+      );
+      return {
+        index: outlineSlide.index,
+        layoutId: 'stat',
+        title: fallbackTitle,
+        value: clip(
+          generated?.value ??
+            generated?.subtitle ??
+            outlineSlide.bulletSummary[0] ??
+            '—',
+          24,
+        ),
+        context: clipOptional(
+          generated?.context ?? outlineSlide.bulletSummary[1],
+          120,
+        ),
+        bullets: supporting.length ? supporting : undefined,
+      };
+    }
     case 'closing':
       return {
         index: outlineSlide.index,
@@ -183,47 +269,63 @@ function buildDeckSlide(
 }
 
 export function normalizeOutlineDeck(raw: OutlineGeneration): OutlineDeck {
-  const slides = raw.slides.map((slide, index) => {
-    const layoutId = coerceLayoutId(
-      slide.layoutId,
-      index === 0 ? 'title' : index === raw.slides.length - 1 ? 'closing' : 'bullets',
-    );
+  const slideCount = Math.min(Math.max(raw.slides.length, 3), 15);
+
+  const slides = raw.slides.slice(0, slideCount).map((slide, index) => {
+    const rawComposition =
+      slide.compositionId?.trim() ||
+      slide.layoutId?.trim() ||
+      undefined;
+    const resolved = resolveOutlineComposition(rawComposition, index, slideCount);
     const headline = clip(slide.headline ?? `投影片 ${index + 1}`, 90);
     let bulletSummary = clipBullets(slide.bulletSummary, 5, 90);
     if (bulletSummary.length === 1 && bulletSummary[0] === headline) {
       bulletSummary = [clip('重點一', 90), clip('重點二', 90)];
     }
 
+    const media = normalizeOutlineMedia(slide.media);
+
     return {
       index: index + 1,
-      layoutId,
+      layoutId: resolved.layoutId,
+      compositionId: resolved.compositionId,
+      media,
       headline,
       bulletSummary,
     };
   });
 
   while (slides.length < 3) {
+    const index = slides.length;
+    const resolved = resolveOutlineComposition(undefined, index, 3);
     slides.push({
-      index: slides.length + 1,
-      layoutId: 'bullets',
-      headline: `補充投影片 ${slides.length + 1}`,
+      index: index + 1,
+      layoutId: resolved.layoutId,
+      compositionId: resolved.compositionId,
+      media: undefined,
+      headline: `補充投影片 ${index + 1}`,
       bulletSummary: [clip('待補內容', 90)],
     });
   }
 
-  const trimmedSlides = slides.slice(0, 15).map((slide, index) => ({
-    ...slide,
-    index: index + 1,
-    layoutId: coerceLayoutId(
-      slide.layoutId,
-      index === 0 ? 'title' : index === slides.length - 1 ? 'closing' : slide.layoutId,
-    ),
-  }));
-
-  if (!(PPT_LAYOUT_IDS as readonly string[]).includes(trimmedSlides[0]!.layoutId)) {
-    trimmedSlides[0]!.layoutId = 'title';
-  }
-  trimmedSlides[trimmedSlides.length - 1]!.layoutId = 'closing';
+  const trimmedSlides = slides.slice(0, 15).map((slide, index) => {
+    const total = Math.min(slides.length, 15);
+    const forcedId =
+      index === 0
+        ? slide.compositionId?.startsWith('title')
+          ? slide.compositionId
+          : 'title_hero'
+        : index === total - 1
+          ? 'closing_cta'
+          : slide.compositionId;
+    const resolved = resolveOutlineComposition(forcedId, index, total);
+    return {
+      ...slide,
+      index: index + 1,
+      layoutId: resolved.layoutId,
+      compositionId: resolved.compositionId,
+    };
+  });
 
   return outlineDeckSchema.parse({
     title: clip(raw.title, 80),
@@ -236,6 +338,7 @@ export function normalizeOutlineDeck(raw: OutlineGeneration): OutlineDeck {
 export function buildDeckPlan(
   outline: OutlineDeck,
   generated: DeckPlanGeneration,
+  templateId = 'default',
 ): DeckPlan {
   const byIndex = new Map<number, DeckSlideGeneration>();
   for (const [index, slide] of generated.slides.entries()) {
@@ -246,14 +349,24 @@ export function buildDeckPlan(
     byIndex.set(index + 1, slide);
   }
 
-  const slides = outline.slides.map((outlineSlide, index) =>
-    buildDeckSlide(outlineSlide, byIndex.get(outlineSlide.index) ?? generated.slides[index]),
-  );
+  const slides = outline.slides.map((outlineSlide, index) => {
+    const generatedSlide =
+      byIndex.get(outlineSlide.index) ?? generated.slides[index];
+    const deckSlide = buildDeckSlide(outlineSlide, generatedSlide);
+    const compositionId =
+      outlineSlide.compositionId ?? outlineSlide.layoutId;
+    const boxes = getCompositionBoxes(compositionId);
+    if (!boxes || Object.keys(boxes).length === 0) {
+      return deckSlide;
+    }
+    return { ...deckSlide, boxes };
+  });
 
   return deckPlanSchema.parse({
     title: outline.title,
     audience: outline.audience,
     tone: outline.tone,
+    templateId,
     outline,
     slides,
   });

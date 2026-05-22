@@ -2,7 +2,7 @@ import { END, START, StateGraph } from '@langchain/langgraph';
 
 import { pptLog } from '../log';
 import { planPptContent } from '../planner';
-import { runPptxSkill } from '../skill/run-pptx-skill';
+import { runPptExport } from '../export/run-ppt-export';
 import { PptGraphAnnotation } from './state';
 
 type PptGraphRuntimeState = typeof PptGraphAnnotation.State;
@@ -14,6 +14,7 @@ async function contentPlanner(state: PptGraphRuntimeState) {
     outline: state.confirmedOutline,
     issues: state.issues,
     attachments: state.attachments,
+    templateId: state.templateId ?? 'default',
   });
 
   return {
@@ -24,8 +25,8 @@ async function contentPlanner(state: PptGraphRuntimeState) {
   };
 }
 
-async function generatePptx(state: PptGraphRuntimeState) {
-  pptLog('→ generatePptx（Python 產生 .pptx）');
+async function validateDeckPlan(state: PptGraphRuntimeState) {
+  pptLog('→ validateDeckPlan（檢查簡報內容）');
   if (!state.deckPlan) {
     return {
       success: false,
@@ -33,52 +34,21 @@ async function generatePptx(state: PptGraphRuntimeState) {
       issues: [
         {
           code: 'missing_deck_plan',
-          message: 'Deck plan is missing before PPTX generation.',
+          message: 'Deck plan is missing before validation.',
         },
       ],
     };
   }
 
-  const result = await runPptxSkill({
-    action: 'generate',
-    plan: state.deckPlan,
-    outputPath: state.outputPath,
-  });
-
-  return {
-    filePath: result.file_path,
-    slideCount: result.slide_count,
-    issues: result.issues,
-    success: result.success,
-    error: result.success ? undefined : result.issues[0]?.message,
-  };
-}
-
-async function validate(state: PptGraphRuntimeState) {
-  pptLog('→ validate（Python 驗證輸出）');
-  if (!state.deckPlan) {
-    return {
-      success: false,
-      error: 'Deck plan is missing.',
-    };
-  }
-
-  if (state.issues.length) {
-    return {
-      success: false,
-      error: state.issues[0]?.message,
-    };
-  }
-
-  const result = await runPptxSkill({
+  const result = await runPptExport({
     action: 'validate',
     plan: state.deckPlan,
   });
 
   return {
     issues: result.issues,
-    slideCount: state.slideCount ?? result.slide_count,
-    success: result.success && Boolean(state.filePath),
+    slideCount: state.deckPlan.slides.length,
+    success: result.success,
     error: result.success ? undefined : result.issues[0]?.message,
   };
 }
@@ -98,12 +68,10 @@ function routeAfterValidation(state: PptGraphRuntimeState) {
 export function buildPptGraph() {
   return new StateGraph(PptGraphAnnotation)
     .addNode('contentPlanner', contentPlanner)
-    .addNode('generatePptx', generatePptx)
-    .addNode('validate', validate)
+    .addNode('validateDeckPlan', validateDeckPlan)
     .addEdge(START, 'contentPlanner')
-    .addEdge('contentPlanner', 'generatePptx')
-    .addEdge('generatePptx', 'validate')
-    .addConditionalEdges('validate', routeAfterValidation, [
+    .addEdge('contentPlanner', 'validateDeckPlan')
+    .addConditionalEdges('validateDeckPlan', routeAfterValidation, [
       'contentPlanner',
       END,
     ])

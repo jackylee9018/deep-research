@@ -8,6 +8,7 @@ export type PptGraphState = {
   userPrompt: string;
   attachments?: PromptAttachment[];
   confirmedOutline: OutlineDeck;
+  templateId?: string;
   deckPlan?: DeckPlan;
   attempt: number;
   maxAttempts: number;
@@ -23,6 +24,7 @@ export const PptGraphAnnotation = Annotation.Root({
   userPrompt: Annotation<string>(),
   attachments: Annotation<PromptAttachment[] | undefined>(),
   confirmedOutline: Annotation<OutlineDeck>(),
+  templateId: Annotation<string | undefined>(),
   deckPlan: Annotation<DeckPlan | undefined>(),
   attempt: Annotation<number>(),
   maxAttempts: Annotation<number>(),

@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PptFormPanel } from '../components/ppt-form-panel';
 import { PptGenerationFeedback } from '../components/ppt-generation-feedback';
@@ -21,6 +22,8 @@ import {
 } from '../lib/ppt-page-text';
 import type { PromptAttachment } from '../lib/prompt-attachments';
 import type { OutlineDeck } from '../lib/ppt-types';
+import { pptPreviewPath } from '../lib/ppt-job-id';
+import { resolveHistoryPreviewUrl } from '../lib/ppt-history';
 import {
   DEFAULT_RESEARCH_MODEL,
   loadSelectedModel,
@@ -28,10 +31,14 @@ import {
   saveSelectedModel,
   type ResearchModelId,
 } from '../lib/research-models';
+import {
+  type PptTemplateId,
+} from '../lib/ppt-templates';
 
 type PptStep = 'form' | 'workflow' | 'history';
 
 export default function PptPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialPrompt = useMemo(
     () => searchParams.get('q') ?? '',
@@ -73,9 +80,12 @@ export default function PptPage() {
   const [outlineReady, setOutlineReady] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [webSearchAvailable, setWebSearchAvailable] = useState(true);
+  const [pptOutputDir, setPptOutputDir] = useState<string | null>(null);
+  const [pptTemplateId, setPptTemplateId] = useState<PptTemplateId>('default');
 
   const outlineAbortRef = useRef<AbortController | null>(null);
   const placeholderRef = useRef<OutlineDeck | null>(null);
+  const previewNavigatedForJob = useRef<string | null>(null);
 
   const selectedHistoryEntry = useMemo(
     () => history.find(entry => entry.id === selectedHistoryId),
@@ -93,12 +103,18 @@ export default function PptPage() {
         if (!res.ok) {
           return;
         }
-        const data = (await res.json()) as { webSearchAvailable?: boolean };
+        const data = (await res.json()) as {
+          webSearchAvailable?: boolean;
+          pptOutputDir?: string | null;
+        };
         if (typeof data.webSearchAvailable === 'boolean') {
           setWebSearchAvailable(data.webSearchAvailable);
           if (!data.webSearchAvailable) {
             setWebSearch(false);
           }
+        }
+        if (typeof data.pptOutputDir === 'string' && data.pptOutputDir.trim()) {
+          setPptOutputDir(data.pptOutputDir);
         }
       } catch {
         // ignore
@@ -120,6 +136,20 @@ export default function PptPage() {
 
   const generating =
     activeJob?.status === 'running' || activeJob?.status === 'pending';
+
+  useEffect(() => {
+    if (step !== 'workflow' || !activeJob?.serverJobId) {
+      return;
+    }
+    if (activeJob.status !== 'running' && activeJob.status !== 'pending') {
+      return;
+    }
+    if (previewNavigatedForJob.current === activeJob.id) {
+      return;
+    }
+    previewNavigatedForJob.current = activeJob.id;
+    router.push(pptPreviewPath(activeJob.serverJobId));
+  }, [activeJob, router, step]);
 
   const updateModel = (next: ResearchModelId) => {
     setModel(next);
@@ -270,12 +300,14 @@ export default function PptPage() {
     setResultDismissed(false);
     setError(undefined);
     setSelectedHistoryId(null);
+    previewNavigatedForJob.current = null;
 
     enqueueJob({
       prompt: prompt.trim(),
       outline,
       model,
       attachments,
+      templateId: pptTemplateId,
     });
   };
 
@@ -283,8 +315,7 @@ export default function PptPage() {
     activeJob &&
     !resultDismissed &&
     step === 'workflow' &&
-    (activeJob.status === 'completed' ||
-      activeJob.status === 'failed' ||
+    (activeJob.status === 'failed' ||
       activeJob.status === 'running' ||
       activeJob.status === 'pending');
 
@@ -349,13 +380,23 @@ export default function PptPage() {
 
             <p className="ppt-history-view-prompt">{selectedHistoryEntry.prompt}</p>
 
-            <a
-              className="ppt-download"
-              href={selectedHistoryEntry.downloadUrl}
-              download
-            >
-              下載 PPTX
-            </a>
+            <div className="ppt-outline-result-actions">
+              <Link
+                className="ppt-download ppt-download--primary"
+                href={resolveHistoryPreviewUrl(selectedHistoryEntry)}
+              >
+                預覽與編輯
+              </Link>
+              {selectedHistoryEntry.downloadUrl ? (
+                <a
+                  className="ppt-download"
+                  href={selectedHistoryEntry.downloadUrl}
+                  download
+                >
+                  下載 PPTX
+                </a>
+              ) : null}
+            </div>
 
             <textarea
               className="ppt-outline-free-text ppt-history-view-outline"
@@ -408,6 +449,8 @@ export default function PptPage() {
             onPageTextPresetChange={setPageTextPreset}
             model={model}
             onModelChange={updateModel}
+            pptTemplateId={pptTemplateId}
+            onPptTemplateIdChange={setPptTemplateId}
             additionalNotes={additionalNotes}
             onAdditionalNotesChange={setAdditionalNotes}
             onRegenerateOutline={() => void generateOutline()}
@@ -421,6 +464,7 @@ export default function PptPage() {
             }
             streamingStatus={outlineLoading ? outlineStatus : undefined}
             error={error}
+            pptOutputDir={pptOutputDir}
             generationFeedback={
               showGenerationFeedback ? (
                 <PptGenerationFeedback
@@ -431,9 +475,8 @@ export default function PptPage() {
                   logs={activeJob.logs}
                   issues={activeJob.issues}
                   error={activeJob.error}
-                  downloadUrl={activeJob.downloadUrl}
                   slideCount={activeJob.slideCount}
-                  outlineTitle={activeJob.outlineTitle}
+                  readySlideCount={activeJob.readySlideCount}
                   progressDismissed={progressDismissed}
                   onDismissProgress={() => setProgressDismissed(true)}
                   onDismissResult={() => {

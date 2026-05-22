@@ -20,6 +20,7 @@ export function AppNavRail() {
   const pathname = usePathname();
   const isResearchRoute = pathname.startsWith('/research');
   const isPptRoute = pathname.startsWith('/ppt');
+  const isPptPreviewRoute = pathname.startsWith('/ppt/preview');
   const isFeatureRoute = isResearchRoute || isPptRoute;
   const researchNav = useOptionalResearchNavHandlers();
   const pptNav = useOptionalPptNavHandlers();
@@ -29,14 +30,23 @@ export function AppNavRail() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    if (isPptPreviewRoute) {
+      setExpanded(false);
+      setHydrated(true);
+      return;
+    }
     setExpanded(loadAppNavOpen(isFeatureRoute));
     setHydrated(true);
-  }, [isFeatureRoute]);
+  }, [isFeatureRoute, isPptPreviewRoute]);
 
   const setOpen = (next: boolean) => {
     setExpanded(next);
     saveAppNavOpen(next);
   };
+
+  if (isPptPreviewRoute) {
+    return null;
+  }
 
   if (!hydrated) {
     return (
