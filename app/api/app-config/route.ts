@@ -38,5 +38,6 @@ export async function GET() {
     llmProvider: llm.provider,
     llmModelId: llm.modelId,
     pptOutputDir: isPptOutputDirConfigured() ? getPptJobsBaseDir() : null,
+    meetingWorkerUrl: process.env.WHISPERX_WORKER_URL?.trim() || 'http://127.0.0.1:8091',
   });
 }

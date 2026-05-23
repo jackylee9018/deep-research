@@ -5,26 +5,32 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import {
+  MEETING_FEATURE_DISPLAY_NAME,
   RESEARCH_FEATURE_DISPLAY_NAME,
   resolveAppDisplayName,
 } from '../lib/app-brand';
 import { loadAppNavOpen, saveAppNavOpen } from '../lib/app-nav-prefs';
 import { navigateToOpenWebUI } from '../lib/openwebui';
+import { MeetingSidebarPanel } from './meeting-sidebar-panel';
+import { useOptionalMeetingNavHandlers } from './meeting-nav-context';
 import { useOptionalResearchNavHandlers } from './research-nav-context';
 import { ResearchSidebarPanel } from './research-sidebar-panel';
 
 export function AppNavRail() {
   const pathname = usePathname();
   const isResearchRoute = pathname.startsWith('/research');
+  const isMeetingRoute = pathname.startsWith('/meeting');
+  const isFeatureSidebarRoute = isResearchRoute || isMeetingRoute;
   const researchNav = useOptionalResearchNavHandlers();
+  const meetingNav = useOptionalMeetingNavHandlers();
   const [expanded, setExpanded] = useState(false);
   const [brandHover, setBrandHover] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setExpanded(loadAppNavOpen(isResearchRoute));
+    setExpanded(loadAppNavOpen(isFeatureSidebarRoute));
     setHydrated(true);
-  }, [isResearchRoute]);
+  }, [isFeatureSidebarRoute]);
 
   const setOpen = (next: boolean) => {
     setExpanded(next);
@@ -34,7 +40,7 @@ export function AppNavRail() {
   if (!hydrated) {
     return (
       <div
-        className={`app-nav-rail app-nav-rail--placeholder${isResearchRoute ? ' is-research' : ''}`}
+        className={`app-nav-rail app-nav-rail--placeholder${isResearchRoute ? ' is-research' : ''}${isMeetingRoute ? ' is-meeting' : ''}`}
         aria-hidden
       />
     );
@@ -43,6 +49,10 @@ export function AppNavRail() {
   const openNewChat = () => {
     if (isResearchRoute && researchNav) {
       researchNav.onNewResearch();
+      return;
+    }
+    if (isMeetingRoute && meetingNav) {
+      meetingNav.onNewMeeting();
       return;
     }
     void navigateToOpenWebUI();
@@ -54,6 +64,7 @@ export function AppNavRail() {
     'app-nav-rail',
     expanded ? 'is-expanded' : '',
     isResearchRoute ? 'is-research' : '',
+    isMeetingRoute ? 'is-meeting' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -73,6 +84,19 @@ export function AppNavRail() {
                   <span className="research-sidebar-logo">OI</span>
                   <span className="research-sidebar-brand-text">
                     {RESEARCH_FEATURE_DISPLAY_NAME}
+                  </span>
+                </Link>
+              ) : isMeetingRoute ? (
+                <Link
+                  href="/meeting"
+                  className="app-nav-panel-brand research-sidebar-brand"
+                  aria-label={MEETING_FEATURE_DISPLAY_NAME}
+                >
+                  <span className="research-sidebar-logo meeting-sidebar-logo">
+                    OI
+                  </span>
+                  <span className="research-sidebar-brand-text">
+                    {MEETING_FEATURE_DISPLAY_NAME}
                   </span>
                 </Link>
               ) : (
@@ -95,6 +119,8 @@ export function AppNavRail() {
 
             {isResearchRoute ? (
               <ResearchSidebarPanel />
+            ) : isMeetingRoute ? (
+              <MeetingSidebarPanel />
             ) : (
               <nav className="app-nav-panel-nav" aria-label="主要功能">
                 <AppNavPanelItem
@@ -138,7 +164,13 @@ export function AppNavRail() {
         </button>
 
         <AppNavRailIconButton
-          label={isResearchRoute ? '新建研究' : '新對話'}
+          label={
+            isResearchRoute
+              ? '新建研究'
+              : isMeetingRoute
+                ? '新會議'
+                : '新對話'
+          }
           onClick={openNewChat}
           icon={<EditIcon />}
         />

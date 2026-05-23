@@ -7,6 +7,9 @@ export const RESEARCH_FEATURE_DISPLAY_NAME = 'Deep Research';
 /** Feature name shown inside /ppt only. */
 export const PPT_FEATURE_DISPLAY_NAME = '生成 PPT';
 
+/** Feature name shown inside /meeting only. */
+export const MEETING_FEATURE_DISPLAY_NAME = '會議摘要';
+
 export function resolveAppDisplayName(
   envName = process.env.NEXT_PUBLIC_APP_NAME,
 ): string {

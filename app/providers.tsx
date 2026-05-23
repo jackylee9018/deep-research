@@ -3,6 +3,8 @@
 import { type ReactNode } from 'react';
 
 import { AppBackgroundToasts } from './components/app-background-toasts';
+import { MeetingJobsProvider } from './components/meeting-jobs-provider';
+import { MeetingNavProvider } from './components/meeting-nav-context';
 import { PptJobsProvider } from './components/ppt-jobs-provider';
 import { PptNavProvider } from './components/ppt-nav-context';
 import { ResearchNavProvider } from './components/research-nav-context';
@@ -14,8 +16,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <ResearchNavProvider>
         <PptNavProvider>
           <PptJobsProvider>
-            {children}
-            <AppBackgroundToasts />
+            <MeetingNavProvider>
+              <MeetingJobsProvider>
+                {children}
+                <AppBackgroundToasts />
+              </MeetingJobsProvider>
+            </MeetingNavProvider>
           </PptJobsProvider>
         </PptNavProvider>
       </ResearchNavProvider>

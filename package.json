@@ -18,6 +18,8 @@
     "ppt:templates:build": "cp templates/default.pptx templates/corporate.pptx && cp templates/default.pptx templates/minimal.pptx",
     "ppt:composition:sync": "tsx src/ppt/composition/sync-catalog-xml.ts",
     "ppt:templates:verify": "tsx src/ppt/templates/verify-layouts.ts",
+    "meeting:worker": "bash services/whisperx-worker/start.sh",
+    "meeting:hf-check": "cd services/whisperx-worker && . .venv/bin/activate && python3 check_hf_access.py",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

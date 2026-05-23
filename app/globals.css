@@ -1964,7 +1964,8 @@ main.research-shell--form {
 }
 
 .app-nav-rail.is-research.is-expanded,
-.app-nav-rail.is-ppt.is-expanded {
+.app-nav-rail.is-ppt.is-expanded,
+.app-nav-rail.is-meeting.is-expanded {
   --app-nav-expanded-width: 16.5rem;
 }
 
@@ -2125,7 +2126,8 @@ main.research-shell--form {
 
 .light-route-shell.route-bg--home .app-nav-rail,
 .light-route-shell.route-bg--ppt .app-nav-rail,
-.light-route-shell.route-bg--research .app-nav-rail {
+.light-route-shell.route-bg--research .app-nav-rail,
+.light-route-shell.route-bg--meeting .app-nav-rail {
   background: rgb(255 255 255 / 0.92);
   backdrop-filter: blur(8px);
 }
@@ -2166,6 +2168,11 @@ main.research-shell--form {
   font-size: 0.75rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.meeting-sidebar-logo {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .research-sidebar-brand-text {
@@ -2317,6 +2324,11 @@ main.research-shell--form {
 .research-sidebar-badge.failed {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.research-sidebar-badge.completed {
+  background: #d1fae5;
+  color: #047857;
 }
 
 .research-sidebar-chat-action {
@@ -4878,5 +4890,391 @@ body:has(.light-route-shell.route-bg--ppt) {
 
   .ppt-studio-deck-title {
     max-width: 140px;
+  }
+}
+
+/* Meeting summary */
+.light-route-shell.route-bg--meeting::before {
+  background: radial-gradient(
+    1200px 600px at 20% -10%,
+    rgba(37, 99, 235, 0.12),
+    transparent 60%
+  );
+}
+
+.light-route-shell.route-bg--meeting .research-app-layout,
+.light-route-shell.route-bg--meeting .meeting-app-layout,
+.light-route-shell.route-bg--meeting .research-shell,
+.light-route-shell.route-bg--meeting .meeting-shell {
+  background: transparent;
+}
+
+.meeting-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  min-height: calc(100vh - 1rem);
+}
+
+.meeting-job-list {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+  padding: 0.75rem;
+}
+
+.meeting-job-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.meeting-job-list-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.meeting-new-btn {
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.meeting-job-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.meeting-job-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.meeting-job-item {
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.meeting-job-item.active {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(219, 234, 254, 0.55);
+}
+
+.meeting-job-item .name {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-job-item .status {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.meeting-job-dismiss {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.meeting-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.meeting-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  border: 2px dashed rgba(37, 99, 235, 0.25);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.meeting-upload-button {
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.meeting-upload-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.meeting-upload-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.meeting-inline-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8em;
+  background: rgba(15, 23, 42, 0.06);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.meeting-form-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.meeting-form-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+}
+
+.meeting-form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.meeting-form-label select {
+  min-width: 120px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  padding: 0.35rem 0.5rem;
+}
+
+.meeting-form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.meeting-service-status {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.meeting-service-status .ok {
+  color: #059669;
+}
+
+.meeting-service-status .bad {
+  color: #dc2626;
+}
+
+.meeting-progress {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(219, 234, 254, 0.45);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.meeting-progress.error {
+  background: rgba(254, 226, 226, 0.55);
+  border-color: rgba(220, 38, 38, 0.25);
+  color: #991b1b;
+}
+
+.meeting-progress.done {
+  background: rgba(209, 250, 229, 0.55);
+  border-color: rgba(5, 150, 105, 0.25);
+  color: #065f46;
+}
+
+.meeting-progress-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.meeting-progress-detail,
+.meeting-progress-file {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.meeting-streaming-note {
+  margin: 0 0 0.75rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.meeting-phase-steps {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meeting-phase-steps li {
+  flex: 1;
+  text-align: center;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.25rem;
+  border-radius: 6px;
+  background: rgba(226, 232, 240, 0.6);
+  color: #64748b;
+}
+
+.meeting-phase-steps li.active {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.meeting-phase-steps li.done {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.meeting-result-panel {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.meeting-result-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.meeting-result-tabs {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.meeting-result-tabs button {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.meeting-result-tabs button.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.meeting-export-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.meeting-export-actions button {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.meeting-markdown {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.meeting-transcript-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 520px;
+  overflow: auto;
+}
+
+.meeting-transcript-line {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.meeting-transcript-meta {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2563eb;
+  margin-bottom: 0.25rem;
+}
+
+.meeting-transcript-line p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.meeting-actions-table-wrap {
+  overflow-x: auto;
+}
+
+.meeting-actions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.meeting-actions-table th,
+.meeting-actions-table td {
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+}
+
+.meeting-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .meeting-shell {
+    grid-template-columns: 1fr;
   }
 }

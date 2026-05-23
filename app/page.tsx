@@ -38,7 +38,7 @@ const FEATURES = [
   },
   {
     id: 'meeting',
-    href: null,
+    href: '/meeting',
     title: '會議摘要',
     description: '快速提煉會議重點',
     iconBg: '#dbeafe',
