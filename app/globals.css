@@ -982,43 +982,62 @@ body:has(.home-page) {
 
 .prompt-toolbar-tip {
   position: absolute;
-  left: 50%;
   z-index: 30;
-  max-width: 16rem;
-  padding: 0.35rem 0.55rem;
+  padding: 0.3rem 0.5rem;
   border-radius: 0.375rem;
   background: #1f2937;
   color: #f9fafb;
   font-size: 0.75rem;
-  line-height: 1.35;
-  text-align: center;
-  white-space: normal;
+  line-height: 1.25;
+  text-align: left;
+  white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transform: translateX(-50%) translateY(2px);
   transition:
     opacity 0.12s ease,
     transform 0.12s ease;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.18);
 }
 
+.prompt-toolbar-tip-wrap--right .prompt-toolbar-tip {
+  left: calc(100% + 0.4rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(2px);
+}
+
+.prompt-toolbar-tip-wrap--left .prompt-toolbar-tip {
+  right: calc(100% + 0.4rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-2px);
+}
+
 .prompt-toolbar-tip-wrap--top .prompt-toolbar-tip {
+  left: 50%;
   bottom: calc(100% + 0.4rem);
+  transform: translateX(-50%) translateY(2px);
+  text-align: center;
 }
 
 .prompt-toolbar-tip-wrap--bottom .prompt-toolbar-tip {
+  left: 50%;
   top: calc(100% + 0.4rem);
   transform: translateX(-50%) translateY(-2px);
+  text-align: center;
 }
 
-.prompt-toolbar-tip-wrap:hover .prompt-toolbar-tip,
-.prompt-toolbar-tip-wrap:focus-within .prompt-toolbar-tip {
+.prompt-toolbar-tip-wrap--right:hover .prompt-toolbar-tip,
+.prompt-toolbar-tip-wrap--right:focus-within .prompt-toolbar-tip,
+.prompt-toolbar-tip-wrap--left:hover .prompt-toolbar-tip,
+.prompt-toolbar-tip-wrap--left:focus-within .prompt-toolbar-tip {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(-50%) translateX(0);
 }
 
+.prompt-toolbar-tip-wrap--top:hover .prompt-toolbar-tip,
+.prompt-toolbar-tip-wrap--top:focus-within .prompt-toolbar-tip,
 .prompt-toolbar-tip-wrap--bottom:hover .prompt-toolbar-tip,
 .prompt-toolbar-tip-wrap--bottom:focus-within .prompt-toolbar-tip {
+  opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
 

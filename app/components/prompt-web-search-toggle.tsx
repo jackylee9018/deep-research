@@ -17,10 +17,10 @@ export function PromptWebSearchToggle({
   const isDisabled = disabled || unavailable;
 
   const title = unavailable
-    ? '聯網搜尋未設定（需 TAVILY_API_KEY）'
+    ? '聯網未設定'
     : enabled
-      ? '已啟用聯網搜尋（產生大綱時搜尋網路）'
-      : '啟用聯網搜尋（產生大綱時搜尋網路）';
+      ? '聯網：開'
+      : '聯網：關';
 
   return (
     <PromptToolbarIconTip tip={title}>

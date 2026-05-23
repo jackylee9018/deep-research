@@ -28,7 +28,7 @@ export function PromptInput({
   disabled = false,
   toolbarLeft,
   showVoiceControls = true,
-  submitAriaLabel = '送出訊息',
+  submitAriaLabel = '送出',
 }: PromptInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasContent = value.trim().length > 0;
@@ -89,13 +89,13 @@ export function PromptInput({
         <div className="owui-input-toolbar">
           <div className="owui-input-toolbar-left">
             {toolbarLeft ?? (
-              <PromptToolbarIconTip tip="更多選項（即將推出）">
+              <PromptToolbarIconTip tip="更多（即將推出）">
                 <button
                   type="button"
                   id="input-menu-button"
                   className="owui-toolbar-icon-btn"
                   aria-label="更多"
-                  title="更多選項（即將推出）"
+                  title="更多（即將推出）"
                 >
                   <PlusAltIcon />
                 </button>
@@ -106,7 +106,7 @@ export function PromptInput({
           <div className="owui-input-toolbar-right">
             {showVoiceControls && hasContent ? (
               <>
-                <PromptToolbarIconTip tip="語音輸入">
+                <PromptToolbarIconTip tip="語音輸入" placement="left">
                   <button
                     type="button"
                     id="voice-input-button"
@@ -117,7 +117,7 @@ export function PromptInput({
                     <DictateMicIcon />
                   </button>
                 </PromptToolbarIconTip>
-                <PromptToolbarIconTip tip={submitAriaLabel}>
+                <PromptToolbarIconTip tip={submitAriaLabel} placement="left">
                   <button
                     type="submit"
                     id="send-message-button"
@@ -131,7 +131,7 @@ export function PromptInput({
                 </PromptToolbarIconTip>
               </>
             ) : showVoiceControls && !hasContent ? (
-              <PromptToolbarIconTip tip="語音模式">
+              <PromptToolbarIconTip tip="語音模式" placement="left">
                 <button
                   type="button"
                   className="owui-voice-mode-btn"
@@ -144,7 +144,7 @@ export function PromptInput({
                 </button>
               </PromptToolbarIconTip>
             ) : (
-              <PromptToolbarIconTip tip={submitAriaLabel}>
+              <PromptToolbarIconTip tip={submitAriaLabel} placement="left">
                 <button
                   type="submit"
                   id="send-message-button"

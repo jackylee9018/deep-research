@@ -99,10 +99,10 @@ export function PromptPdfAttachments({
   };
 
   const attachTip = parsing
-    ? '正在解析 PDF…'
+    ? '解析中…'
     : atLimit
-      ? `最多 ${MAX_PROMPT_PDF_ATTACHMENTS} 個 PDF`
-      : '附加 PDF 參考文件（產生大綱或研究時作為參考）';
+      ? `最多 ${MAX_PROMPT_PDF_ATTACHMENTS} 個`
+      : '附加 PDF';
 
   const attachButton = (
     <>

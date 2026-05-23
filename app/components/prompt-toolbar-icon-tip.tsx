@@ -8,11 +8,11 @@ import type { ReactNode } from 'react';
 export function PromptToolbarIconTip({
   tip,
   children,
-  placement = 'top',
+  placement = 'right',
 }: {
   tip: string;
   children: ReactNode;
-  placement?: 'top' | 'bottom';
+  placement?: 'top' | 'bottom' | 'left' | 'right';
 }) {
   return (
     <span
