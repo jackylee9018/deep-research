@@ -129,6 +129,25 @@ export function latestStreamDetail(job: MeetingJob): string {
     if (
       part !== undefined &&
       isRecord(part) &&
+      part.type === 'punctuateProgress' &&
+      typeof part.batchIndex === 'number' &&
+      typeof part.batchCount === 'number'
+    ) {
+      return `標點還原 ${part.batchIndex}/${part.batchCount}`;
+    }
+    if (
+      part !== undefined &&
+      isRecord(part) &&
+      part.type === 'step' &&
+      part.step === 'punctuation' &&
+      typeof part.detail === 'string' &&
+      part.detail.trim()
+    ) {
+      return part.detail;
+    }
+    if (
+      part !== undefined &&
+      isRecord(part) &&
       part.type === 'summarizeProgress' &&
       typeof part.chunkIndex === 'number' &&
       typeof part.chunkCount === 'number'
@@ -184,6 +203,7 @@ export function finalizeMeetingJobContent(
     language: 'zh',
     detailLevel: 'full',
     includeAppendix: true,
+    restorePunctuation: false,
     status: 'completed',
     createdAt: 0,
     updatedAt: 0,

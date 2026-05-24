@@ -40,6 +40,7 @@ type EnqueueInput = {
   language: string;
   detailLevel: 'brief' | 'full';
   includeAppendix: boolean;
+  restorePunctuation: boolean;
   minSpeakers?: number;
   maxSpeakers?: number;
 };
@@ -388,6 +389,7 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
             language: input.language,
             detailLevel: input.detailLevel,
             includeAppendix: input.includeAppendix,
+            restorePunctuation: input.restorePunctuation,
             minSpeakers: input.minSpeakers,
             maxSpeakers: input.maxSpeakers,
           },
@@ -498,6 +500,7 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
         language: input.language,
         detailLevel: input.detailLevel,
         includeAppendix: input.includeAppendix,
+        restorePunctuation: input.restorePunctuation,
       });
       fileRegistry.current.set(job.id, input.file);
       setJobs(prev => [job, ...prev]);

@@ -13,6 +13,8 @@ type MeetingFormPanelProps = {
   onDetailLevelChange: (value: 'brief' | 'full') => void;
   includeAppendix: boolean;
   onIncludeAppendixChange: (value: boolean) => void;
+  restorePunctuation: boolean;
+  onRestorePunctuationChange: (value: boolean) => void;
   onSubmit: (file: File) => void;
   loading?: boolean;
   disabled?: boolean;
@@ -27,6 +29,8 @@ export function MeetingFormPanel({
   onDetailLevelChange,
   includeAppendix,
   onIncludeAppendixChange,
+  restorePunctuation,
+  onRestorePunctuationChange,
   onSubmit,
   loading = false,
   disabled = false,
@@ -97,6 +101,15 @@ export function MeetingFormPanel({
                 disabled={busy}
               />
               附逐字稿
+            </label>
+            <label className="meeting-form-check">
+              <input
+                type="checkbox"
+                checked={restorePunctuation}
+                onChange={e => onRestorePunctuationChange(e.target.checked)}
+                disabled={busy}
+              />
+              標點還原
             </label>
           </div>
           <div className="meeting-service-status">

@@ -22,6 +22,7 @@ export function meetingPhaseLabel(phase: string): string {
     loading: '載入模型',
     aligning: '對齊時間軸',
     diarizing: '辨識說話者',
+    punctuating: '標點還原',
     summarizing: '生成會議紀要',
     done: '完成',
     failed: '失敗',
@@ -41,7 +42,8 @@ export function meetingPhaseStepIndex(phase: string | null): number {
     phase === 'preprocessing' ||
     phase === 'loading' ||
     phase === 'aligning' ||
-    phase === 'diarizing'
+    phase === 'diarizing' ||
+    phase === 'punctuating'
   ) {
     return 1;
   }

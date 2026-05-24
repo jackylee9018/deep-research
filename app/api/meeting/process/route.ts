@@ -16,6 +16,7 @@ import {
   renderMeetingMinutesMarkdown,
   renderPartialMeetingMinutesMarkdown,
 } from '@/meeting/render-minutes-md';
+import { punctuateMeetingTranscript } from '@/meeting/punctuate-transcript';
 import { summarizeMeetingMinutes } from '@/meeting/summarize-minutes';
 import {
   checkWhisperxWorkerHealth,
@@ -32,6 +33,7 @@ const processBodySchema = z.object({
   language: z.string().default('zh'),
   detailLevel: z.enum(['brief', 'full']).default('full'),
   includeAppendix: z.boolean().default(true),
+  restorePunctuation: z.boolean().default(false),
   minSpeakers: z.number().int().positive().optional(),
   maxSpeakers: z.number().int().positive().optional(),
 });
@@ -109,6 +111,7 @@ export async function POST(req: Request) {
     language,
     detailLevel,
     includeAppendix,
+    restorePunctuation,
     minSpeakers,
     maxSpeakers,
   } = parsed.data;
@@ -138,9 +141,43 @@ export async function POST(req: Request) {
 
       dataStream.writeData({ type: 'workerJob', workerJobId });
 
-      const transcript = await waitForTranscription(workerJobId, status => {
+      let transcript = await waitForTranscription(workerJobId, status => {
         dataStream.writeData(workerPhasePayload(status));
       });
+
+      if (restorePunctuation) {
+        dataStream.writeData({ type: 'phase', phase: 'punctuating' });
+        dataStream.writeData({
+          type: 'step',
+          step: 'punctuation',
+          status: 'active',
+          detail: '正在還原標點',
+        });
+
+        transcript = await punctuateMeetingTranscript(transcript, {
+          language,
+          onProgress: ({ batchIndex, batchCount }) => {
+            dataStream.writeData({
+              type: 'punctuateProgress',
+              batchIndex,
+              batchCount,
+            });
+            dataStream.writeData({
+              type: 'step',
+              step: 'punctuation',
+              status: 'active',
+              detail: `標點還原 ${batchIndex}/${batchCount}`,
+            });
+          },
+        });
+
+        dataStream.writeData({
+          type: 'step',
+          step: 'punctuation',
+          status: 'done',
+          detail: '標點還原完成',
+        });
+      }
 
       await writeMeetingJobJson(jobId, 'transcript.json', transcript);
       dataStream.writeData({

@@ -22,6 +22,7 @@ export type MeetingJob = {
   language: string;
   detailLevel: 'brief' | 'full';
   includeAppendix: boolean;
+  restorePunctuation: boolean;
   status: MeetingJobStatus;
   createdAt: number;
   updatedAt: number;
@@ -51,6 +52,7 @@ export function loadPersistedMeetingJobs(): MeetingJob[] {
     return parsed.map(job => {
       const normalized: MeetingJob = {
         ...job,
+        restorePunctuation: job.restorePunctuation ?? false,
         status:
           job.status === 'running' || job.status === 'pending'
             ? 'failed'
@@ -92,6 +94,7 @@ export function createMeetingJob(input: {
   language: string;
   detailLevel: 'brief' | 'full';
   includeAppendix: boolean;
+  restorePunctuation: boolean;
 }): MeetingJob {
   const now = Date.now();
   return {
@@ -100,6 +103,7 @@ export function createMeetingJob(input: {
     language: input.language,
     detailLevel: input.detailLevel,
     includeAppendix: input.includeAppendix,
+    restorePunctuation: input.restorePunctuation,
     status: 'pending',
     createdAt: now,
     updatedAt: now,

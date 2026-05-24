@@ -15,6 +15,7 @@ export default function MeetingPage() {
   const [language, setLanguage] = useState('zh');
   const [detailLevel, setDetailLevel] = useState<'brief' | 'full'>('full');
   const [includeAppendix, setIncludeAppendix] = useState(true);
+  const [restorePunctuation, setRestorePunctuation] = useState(false);
   const [workerReady, setWorkerReady] = useState<boolean | null>(null);
   const [llmReady, setLlmReady] = useState<boolean | null>(null);
 
@@ -46,9 +47,10 @@ export default function MeetingPage() {
         language,
         detailLevel,
         includeAppendix,
+        restorePunctuation,
       });
     },
-    [enqueueJob, language, detailLevel, includeAppendix, isRunning],
+    [enqueueJob, language, detailLevel, includeAppendix, restorePunctuation, isRunning],
   );
 
   const onNewMeeting = useCallback(() => {
@@ -80,6 +82,8 @@ export default function MeetingPage() {
               onDetailLevelChange={setDetailLevel}
               includeAppendix={includeAppendix}
               onIncludeAppendixChange={setIncludeAppendix}
+              restorePunctuation={restorePunctuation}
+              onRestorePunctuationChange={setRestorePunctuation}
               onSubmit={handleSubmit}
               loading={isRunning}
               disabled={workerReady === false || llmReady === false}

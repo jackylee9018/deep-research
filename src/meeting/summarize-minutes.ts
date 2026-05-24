@@ -20,6 +20,10 @@ function minutesLanguageGuidance(language?: string): string {
   return '使用繁體中文。';
 }
 
+function minutesSpeakerGuidance(): string {
+  return '與會者與發言者僅能使用逐字稿中出現的 SPEAKER 標籤（如 SPEAKER_00、SPEAKER_01），禁止自行推測、替換或虛構真實姓名、職稱或暱稱；participants、待辦 owner、speakerHighlights 的 speaker，以及摘要與決策中指稱發言者時皆同。';
+}
+
 function mergePartialMinutes(
   partials: PartialMeetingMinutes[],
 ): PartialMeetingMinutes {
@@ -77,7 +81,7 @@ async function extractPartialMinutes(
 ): Promise<PartialMeetingMinutes> {
   const res = await generateObject({
     system: `你是專業會議紀錄助理。僅根據逐字稿片段整理資訊，不可推測未出現的決策或待辦。
-待辦事項的 owner 必須使用逐字稿中的 SPEAKER 標籤（例如 SPEAKER_00），不可虛構姓名。${minutesLanguageGuidance(language)}`,
+${minutesSpeakerGuidance()}${minutesLanguageGuidance(language)}`,
     prompt: trimPrompt(
       `會議音訊檔名：${fileName}\n\n以下為逐字稿片段：\n<transcript>\n${chunk}\n</transcript>\n\n抽取此片段中的：摘要句、議題、決策、待辦、未決事項、各 speaker 重點。`,
     ),
@@ -94,7 +98,7 @@ async function synthesizeMinutes(
 ): Promise<MeetingMinutes> {
   const res = await generateObject({
     system: `你是專業會議紀錄助理。根據已整理的片段摘要產出完整會議紀錄 JSON。
-規則：僅使用提供內容；待辦 owner 保留 SPEAKER 標籤；${minutesLanguageGuidance(language)}；標題簡潔。`,
+規則：僅使用提供內容；${minutesSpeakerGuidance()}${minutesLanguageGuidance(language)}；標題簡潔。`,
     prompt: trimPrompt(
       `會議音訊檔名：${fileName}\n\n<merged_notes>\n${JSON.stringify(merged, null, 2)}\n</merged_notes>\n\n產出完整會議紀錄。`,
     ),
@@ -125,7 +129,7 @@ export async function summarizeMeetingMinutes(
   if (fullText.length <= CHUNK_CHARS) {
     const res = await generateObject({
       system: `你是專業會議紀錄助理。僅根據逐字稿整理會議紀錄，不可推測。
-待辦 owner 必須使用逐字稿中的 SPEAKER 標籤。${minutesLanguageGuidance(language)}${
+${minutesSpeakerGuidance()}${minutesLanguageGuidance(language)}${
         options?.detailLevel === 'brief'
           ? '內容精簡，每段列表最多 5 項。'
           : ''

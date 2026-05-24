@@ -6,6 +6,7 @@ export const meetingUtteranceSchema = z.object({
   startSec: z.number(),
   endSec: z.number(),
   text: z.string(),
+  textRaw: z.string().optional(),
 });
 
 export const meetingTranscriptSchema = z.object({

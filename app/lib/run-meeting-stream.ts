@@ -29,6 +29,7 @@ export async function runMeetingStream(
     language: string;
     detailLevel: 'brief' | 'full';
     includeAppendix: boolean;
+    restorePunctuation: boolean;
     minSpeakers?: number;
     maxSpeakers?: number;
   },
@@ -73,6 +74,7 @@ export async function runMeetingStream(
       language: body.language,
       detailLevel: body.detailLevel,
       includeAppendix: body.includeAppendix,
+      restorePunctuation: body.restorePunctuation,
       minSpeakers: body.minSpeakers,
       maxSpeakers: body.maxSpeakers,
     }),
