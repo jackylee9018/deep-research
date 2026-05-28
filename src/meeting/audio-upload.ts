@@ -6,6 +6,7 @@ const AUDIO_TYPES = new Set([
   'audio/mp4',
   'audio/m4a',
   'audio/x-m4a',
+  'video/mp4',
 ]);
 
 export function isMeetingAudioFile(file: File): boolean {
@@ -14,11 +15,12 @@ export function isMeetingAudioFile(file: File): boolean {
     AUDIO_TYPES.has(file.type) ||
     name.endsWith('.mp3') ||
     name.endsWith('.wav') ||
-    name.endsWith('.m4a')
+    name.endsWith('.m4a') ||
+    name.endsWith('.mp4')
   );
 }
 
 export function meetingAudioExtension(fileName: string): string {
-  const ext = fileName.toLowerCase().match(/\.(mp3|wav|m4a)$/)?.[0];
+  const ext = fileName.toLowerCase().match(/\.(mp3|wav|m4a|mp4)$/)?.[0];
   return ext ?? '.mp3';
 }

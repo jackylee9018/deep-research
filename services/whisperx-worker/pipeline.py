@@ -3,6 +3,14 @@
 from __future__ import annotations
 
 import json
+import sys
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    module="pyannote.audio.core.io",
+)
 import os
 import subprocess
 import tempfile
@@ -13,15 +21,43 @@ from typing import Any
 import torch
 
 
+def _normalize_device(device: str) -> str:
+    """WhisperX uses faster-whisper / CTranslate2 — only cpu and cuda are supported."""
+    normalized = device.strip().lower()
+    if normalized == "cuda":
+        if torch.cuda.is_available():
+            return "cuda"
+        print(
+            "Note: WHISPERX_DEVICE=cuda requested but CUDA is unavailable; using cpu.",
+            file=sys.stderr,
+        )
+        return "cpu"
+    if normalized in ("mps", "metal"):
+        print(
+            "Note: WHISPERX_DEVICE=mps is not supported by WhisperX/faster-whisper; using cpu.",
+            file=sys.stderr,
+        )
+        return "cpu"
+    if normalized != "cpu":
+        print(
+            f"Note: unknown WHISPERX_DEVICE={device!r}; using cpu.",
+            file=sys.stderr,
+        )
+    return "cpu"
+
+
 def resolve_device() -> str:
     forced = os.environ.get("WHISPERX_DEVICE", "").strip().lower()
     if forced:
-        return forced
+        return _normalize_device(forced)
     if torch.cuda.is_available():
         return "cuda"
     if os.environ.get("WHISPERX_PREFER_MPS", "").strip() == "1":
         if torch.backends.mps.is_available():
-            return "mps"
+            print(
+                "Note: WHISPERX_PREFER_MPS is set but faster-whisper has no MPS backend; using cpu.",
+                file=sys.stderr,
+            )
     # faster-whisper / pyannote are most stable on CPU for Apple Silicon
     return "cpu"
 
@@ -29,6 +65,9 @@ def resolve_device() -> str:
 def resolve_compute_type(device: str) -> str:
     explicit = os.environ.get("WHISPERX_COMPUTE_TYPE", "").strip()
     if explicit:
+        if device == "cpu" and explicit == "float16":
+            # Common misconfig with WHISPERX_DEVICE=mps + float16 on Mac.
+            return "int8"
         return explicit
     if device == "cuda":
         return "float16"
@@ -188,6 +227,7 @@ def transcribe_file(
     source_path: Path,
     options: TranscribeOptions,
     on_progress: callable | None = None,
+    on_partial: callable | None = None,
 ) -> dict[str, Any]:
     import whisperx
 
@@ -200,6 +240,28 @@ def transcribe_file(
     def progress(phase: str, detail: str = "") -> None:
         if on_progress:
             on_progress(phase, detail)
+
+    def publish_partial() -> None:
+        if not on_partial:
+            return
+        partial_duration = (
+            max((u["endSec"] for u in all_utterances), default=0.0)
+            if all_utterances
+            else 0.0
+        )
+        on_partial(
+            {
+                "meta": {
+                    "durationSec": partial_duration,
+                    "language": options.language or "zh",
+                    "model": model_name,
+                    "device": device,
+                    "segmentCount": len(segments),
+                },
+                "speakers": sorted(speakers_set),
+                "utterances": all_utterances,
+            },
+        )
 
     progress("preprocessing", "Converting audio to 16kHz mono WAV")
 
@@ -264,6 +326,7 @@ def transcribe_file(
             if options.max_speakers is not None:
                 diarize_kwargs["max_speakers"] = options.max_speakers
 
+            # whisperx.DiarizationPipeline expects str path or 1-D numpy float32 array.
             diarize_segments = diarize_model(audio, **diarize_kwargs)
             result = whisperx.assign_word_speakers(diarize_segments, result)
 
@@ -284,6 +347,8 @@ def transcribe_file(
                         "text": text,
                     },
                 )
+
+            publish_partial()
 
             if index + 1 < len(segments):
                 probe = subprocess.run(

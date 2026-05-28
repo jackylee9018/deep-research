@@ -12,6 +12,7 @@ import {
 } from '@/export-report';
 import { normalizeReportMarkdown } from '@/normalize-report-markdown';
 import type { FollowUpEntry } from '@/research-query';
+import type { ResearchOutputLanguage } from '@/research-output-language';
 
 import { ResearchFormPanel } from '../components/research-form-panel';
 import { ResearchShellLayout } from '../components/research-shell-layout';
@@ -190,6 +191,8 @@ export default function ResearchPage() {
     DEFAULT_RESEARCH_INTENSITY,
   );
   const [mode, setMode] = useState<Mode>('report');
+  const [outputLanguage, setOutputLanguage] =
+    useState<ResearchOutputLanguage>('auto');
   const [step, setStep] = useState<
     'form' | 'followup' | 'result' | 'history'
   >('form');
@@ -245,6 +248,7 @@ export default function ResearchPage() {
     setQuery(activeJob.query);
     setIntensity(inferResearchIntensity(activeJob.breadth, activeJob.depth));
     setMode(activeJob.mode);
+    setOutputLanguage(activeJob.outputLanguage ?? 'auto');
     if (activeJob.status === 'running' || activeJob.status === 'completed') {
       setResearchStartedAt(activeJob.createdAt);
     }
@@ -418,6 +422,7 @@ export default function ResearchPage() {
     setSelectedHistoryId(null);
     setStep('form');
     setMode('report');
+    setOutputLanguage('auto');
     setIntensity(DEFAULT_RESEARCH_INTENSITY);
     setAttachments([]);
     setFollowUpQuestions([]);
@@ -493,6 +498,7 @@ export default function ResearchPage() {
       depth,
       mode: 'report',
       model: selectedModel,
+      outputLanguage,
       followUp,
       attachments,
     });
@@ -714,6 +720,8 @@ export default function ResearchPage() {
           onIntensityChange={setIntensity}
           model={selectedModel}
           onModelChange={setSelectedModel}
+          outputLanguage={outputLanguage}
+          onOutputLanguageChange={setOutputLanguage}
           attachments={attachments}
           onAttachmentsChange={setAttachments}
           onSubmit={() => void handleFormNext()}

@@ -203,7 +203,6 @@ export function finalizeMeetingJobContent(
     language: 'zh',
     detailLevel: 'full',
     includeAppendix: true,
-    restorePunctuation: false,
     status: 'completed',
     createdAt: 0,
     updatedAt: 0,

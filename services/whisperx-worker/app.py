@@ -2,8 +2,19 @@
 
 from __future__ import annotations
 
+import warnings
+
+# pyannote may warn that torchcodec cannot decode files; we pass in-memory waveforms instead.
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    module="pyannote.audio.core.io",
+)
+
 import json
+import logging
 import os
+import queue
 import shutil
 import threading
 import uuid
@@ -27,6 +38,15 @@ DATA_DIR = Path(
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="WhisperX Worker", version="1.0.0")
+logger = logging.getLogger("whisperx-worker")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"),
+    )
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -52,7 +72,11 @@ class TranscribeRequest(BaseModel):
 
 
 _jobs_lock = threading.Lock()
-_jobs: dict[str, dict[str, Any]] = {}
+try:
+    MAX_CONCURRENT_JOBS = max(1, int(os.environ.get("WHISPERX_MAX_CONCURRENT", "1")))
+except ValueError:
+    MAX_CONCURRENT_JOBS = 1
+_job_queue: queue.Queue[tuple[str, Path, TranscribeOptions]] = queue.Queue()
 
 
 def _job_dir(job_id: str) -> Path:
@@ -72,18 +96,31 @@ def _write_meta(job_id: str, payload: dict[str, Any]) -> None:
 
 
 def _run_job(job_id: str, source: Path, options: TranscribeOptions) -> None:
+    logger.info("Job %s started: source=%s", job_id, source.name)
+
     def on_progress(phase: str, detail: str = "") -> None:
+        logger.info("Job %s phase=%s detail=%s", job_id, phase, detail or "-")
         with _jobs_lock:
             meta = _read_meta(job_id)
             meta["phase"] = phase
             meta["detail"] = detail
+            meta["heartbeatAt"] = datetime.now(timezone.utc).isoformat()
             if phase in JobStatus.__members__:
                 meta["status"] = phase
             _write_meta(job_id, meta)
 
+    def on_partial(payload: dict[str, Any]) -> None:
+        partial_path = _job_dir(job_id) / "transcript.partial.json"
+        write_transcript_json(partial_path, payload)
+        with _jobs_lock:
+            meta = _read_meta(job_id)
+            meta["partialUtteranceCount"] = len(payload.get("utterances", []))
+            meta["heartbeatAt"] = datetime.now(timezone.utc).isoformat()
+            _write_meta(job_id, meta)
+
     try:
         on_progress("preprocessing")
-        result = transcribe_file(source, options, on_progress=on_progress)
+        result = transcribe_file(source, options, on_progress=on_progress, on_partial=on_partial)
         transcript_path = _job_dir(job_id) / "transcript.json"
         write_transcript_json(transcript_path, result)
         with _jobs_lock:
@@ -91,23 +128,52 @@ def _run_job(job_id: str, source: Path, options: TranscribeOptions) -> None:
             meta["status"] = JobStatus.done.value
             meta["phase"] = "done"
             meta["detail"] = "Transcription complete"
+            meta["heartbeatAt"] = datetime.now(timezone.utc).isoformat()
             meta["finishedAt"] = datetime.now(timezone.utc).isoformat()
             _write_meta(job_id, meta)
+        logger.info("Job %s completed", job_id)
     except Exception as exc:  # noqa: BLE001
+        import traceback
+
+        traceback.print_exc()
+        err = str(exc).strip() or repr(exc)
         with _jobs_lock:
             meta = _read_meta(job_id)
             meta["status"] = JobStatus.failed.value
             meta["phase"] = "failed"
-            meta["error"] = str(exc)
+            meta["error"] = err
+            meta["heartbeatAt"] = datetime.now(timezone.utc).isoformat()
             meta["finishedAt"] = datetime.now(timezone.utc).isoformat()
             _write_meta(job_id, meta)
+        logger.exception("Job %s failed: %s", job_id, err)
+
+
+def _worker_loop() -> None:
+    while True:
+        job_id, source, options = _job_queue.get()
+        logger.info("Dequeued job %s (queued remaining=%s)", job_id, _job_queue.qsize())
+        try:
+            _run_job(job_id, source, options)
+        finally:
+            _job_queue.task_done()
+
+
+for i in range(MAX_CONCURRENT_JOBS):
+    worker = threading.Thread(
+        target=_worker_loop,
+        name=f"whisperx-worker-{i + 1}",
+        daemon=True,
+    )
+    worker.start()
 
 
 @app.get("/health")
-def health() -> dict[str, str | bool]:
+def health() -> dict[str, str | bool | int]:
     return {
         "status": "ok",
         "hfTokenConfigured": hf_token_configured(),
+        "maxConcurrentJobs": MAX_CONCURRENT_JOBS,
+        "queuedJobs": _job_queue.qsize(),
     }
 
 
@@ -137,6 +203,7 @@ async def transcribe(
         "phase": "queued",
         "detail": "Queued",
         "createdAt": datetime.now(timezone.utc).isoformat(),
+        "heartbeatAt": datetime.now(timezone.utc).isoformat(),
         "language": language,
     }
     _write_meta(job_id, meta)
@@ -146,12 +213,17 @@ async def transcribe(
         min_speakers=min_speakers,
         max_speakers=max_speakers,
     )
-    thread = threading.Thread(
-        target=_run_job,
-        args=(job_id, source, options),
-        daemon=True,
+    queued_ahead = _job_queue.qsize()
+    if queued_ahead > 0:
+        meta["detail"] = f"Queued ({queued_ahead} ahead)"
+        _write_meta(job_id, meta)
+    _job_queue.put((job_id, source, options))
+    logger.info(
+        "Accepted job %s file=%s queue_ahead=%s",
+        job_id,
+        file.filename,
+        queued_ahead,
     )
-    thread.start()
     return {"jobId": job_id}
 
 
@@ -171,11 +243,17 @@ def get_result(job_id: str) -> dict[str, Any]:
     return json.loads(transcript_path.read_text(encoding="utf-8"))
 
 
+@app.get("/jobs/{job_id}/partial-result")
+def get_partial_result(job_id: str) -> dict[str, Any]:
+    transcript_path = _job_dir(job_id) / "transcript.partial.json"
+    if not transcript_path.exists():
+        raise HTTPException(status_code=404, detail="Partial transcript missing")
+    return json.loads(transcript_path.read_text(encoding="utf-8"))
+
+
 @app.delete("/jobs/{job_id}")
 def delete_job(job_id: str) -> dict[str, bool]:
     path = _job_dir(job_id)
     if path.exists():
         shutil.rmtree(path, ignore_errors=True)
-    with _jobs_lock:
-        _jobs.pop(job_id, None)
     return {"ok": True}

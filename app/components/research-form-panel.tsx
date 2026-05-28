@@ -15,6 +15,7 @@ import {
   type ResearchIntensity,
 } from '../lib/research-intensity';
 import type { ResearchModelId } from '../lib/research-models';
+import type { ResearchOutputLanguage } from '@/research-output-language';
 
 type ResearchFormPanelProps = {
   query: string;
@@ -23,6 +24,8 @@ type ResearchFormPanelProps = {
   onIntensityChange: (value: ResearchIntensity) => void;
   model: ResearchModelId;
   onModelChange: (model: ResearchModelId) => void;
+  outputLanguage: ResearchOutputLanguage;
+  onOutputLanguageChange: (value: ResearchOutputLanguage) => void;
   attachments: PromptAttachment[];
   onAttachmentsChange: (attachments: PromptAttachment[]) => void;
   onSubmit: () => void;
@@ -37,6 +40,8 @@ export function ResearchFormPanel({
   onIntensityChange,
   model,
   onModelChange,
+  outputLanguage,
+  onOutputLanguageChange,
   attachments,
   onAttachmentsChange,
   onSubmit,
@@ -64,6 +69,8 @@ export function ResearchFormPanel({
             onIntensityChange={onIntensityChange}
             model={model}
             onModelChange={onModelChange}
+            outputLanguage={outputLanguage}
+            onOutputLanguageChange={onOutputLanguageChange}
             disabled={submitBusy}
           />
 

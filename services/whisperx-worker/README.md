@@ -4,7 +4,11 @@
 
 ## Mac M5（Apple Silicon）建議
 
-1. 安裝 [ffmpeg](https://ffmpeg.org/)：`brew install ffmpeg`
+1. 安裝 [ffmpeg](https://ffmpeg.org/)：`brew install ffmpeg`（CLI 轉檔用，支援 v8）
+
+   **不要**在 worker 啟動時設定 `DYLD_FALLBACK_LIBRARY_PATH` 指向 `ffmpeg@7`：會與 PyAV（`av` 套件）同時載入兩套 FFmpeg，出現 `objc: Class AVFFrameReceiver is implemented in both ...` 警告。
+
+   本專案轉錄流程用 `ffmpeg` 命令列 + `whisperx.load_audio`，說話者分段用記憶體 waveform，不依賴 torchcodec 解檔。啟動時若看到 pyannote 的 torchcodec 提示，可忽略。
 2. Python 3.10+ 虛擬環境：
 
 ```bash
@@ -45,14 +49,31 @@ curl http://127.0.0.1:8091/health
 
 5. Next.js 設定：`WHISPERX_WORKER_URL=http://127.0.0.1:8091`
 
-### 可選：嘗試 MPS
+6. 併發與排隊（建議）
+
+- 預設會啟用內建 queue，避免多個長音檔同時轉錄互搶資源。
+- 可用 `WHISPERX_MAX_CONCURRENT` 控制同時處理數（預設 `1`）：
 
 ```bash
-export WHISPERX_PREFER_MPS=1
-export WHISPERX_DEVICE=mps
+# 建議先從 1 開始，穩定後再測 2
+WHISPERX_MAX_CONCURRENT=1
 ```
 
-若轉錄失敗，改回 `WHISPERX_DEVICE=cpu`。
+- `GET /health` 會回傳 `maxConcurrentJobs` 與 `queuedJobs` 供觀察。
+
+### Apple Silicon（M 系列）裝置設定
+
+WhisperX 底層為 **faster-whisper（CTranslate2）**，僅支援 **`cpu`** 與 **`cuda`**，**不支援 `mps`**。
+
+建議在 `.env` / `.env.local`：
+
+```bash
+WHISPERX_DEVICE=cpu
+WHISPERX_COMPUTE_TYPE=int8
+WHISPERX_MODEL=small   # 或 medium，依速度/品質取捨
+```
+
+若設成 `WHISPERX_DEVICE=mps`，worker 會自動改為 `cpu` 並在 log 提示。
 
 ## API
 

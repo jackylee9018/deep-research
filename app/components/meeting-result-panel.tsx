@@ -11,6 +11,7 @@ import { formatTimestamp } from '@/meeting/format-transcript';
 import type { MeetingJob } from '../lib/meeting-jobs';
 import {
   jobHasDisplayableContent,
+  latestStreamDetail,
   resolveJobMarkdown,
   resolveJobMinutes,
   resolveJobTranscript,
@@ -107,27 +108,19 @@ export function MeetingResultPanel({ job }: { job: MeetingJob }) {
   };
 
   if (job.status === 'running' && !hasContent) {
-    const uploadDetail = job.data
-      .slice()
-      .reverse()
-      .find(
-        part =>
-          typeof part === 'object' &&
-          part !== null &&
-          !Array.isArray(part) &&
-          (part as { type?: string }).type === 'transcribe',
-      ) as { detail?: string } | undefined;
+    const progressDetail = latestStreamDetail(job);
 
     return (
       <section className="meeting-result-panel">
         <p className="meeting-streaming-note" role="status">
-          {job.serverJobId
-            ? '音訊已上傳，伺服器處理中…'
-            : (uploadDetail?.detail ?? '正在上傳音訊…')}
+          {progressDetail ||
+            (job.serverJobId
+              ? '音訊已上傳，伺服器處理中…'
+              : '正在上傳音訊…')}
         </p>
         <p className="meeting-empty">
           {job.serverJobId
-            ? '轉錄與摘要可能需要數分鐘。若 SSE 中斷，系統仍會每 4 秒從伺服器拉取結果。'
+            ? '轉錄與摘要可能需要數分鐘，下方進度會每 2 秒更新。'
             : '大型音訊檔上傳中，完成後會立即顯示處理進度。'}
         </p>
       </section>

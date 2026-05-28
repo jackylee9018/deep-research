@@ -1,4 +1,4 @@
-import { processDataStream, type JSONValue } from 'ai';
+import type { JSONValue } from 'ai';
 
 import type { MeetingMinutes } from '@/meeting/schemas/minutes';
 import type { MeetingTranscript } from '@/meeting/schemas/transcript';
@@ -29,7 +29,6 @@ export async function runMeetingStream(
     language: string;
     detailLevel: 'brief' | 'full';
     includeAppendix: boolean;
-    restorePunctuation: boolean;
     minSpeakers?: number;
     maxSpeakers?: number;
   },
@@ -62,9 +61,8 @@ export async function runMeetingStream(
     return;
   }
 
-  callbacks.onUploadProgress?.('上傳完成，開始處理…');
+  callbacks.onUploadProgress?.('上傳完成，建立後台任務…');
   callbacks.onData({ type: 'job', jobId: uploadJson.jobId });
-  callbacks.onData({ type: 'phase', phase: 'transcribing' });
 
   const response = await fetch('/api/meeting/process', {
     method: 'POST',
@@ -74,7 +72,6 @@ export async function runMeetingStream(
       language: body.language,
       detailLevel: body.detailLevel,
       includeAppendix: body.includeAppendix,
-      restorePunctuation: body.restorePunctuation,
       minSpeakers: body.minSpeakers,
       maxSpeakers: body.maxSpeakers,
     }),
@@ -86,55 +83,82 @@ export async function runMeetingStream(
     return;
   }
 
-  if (!response.body) {
-    callbacks.onError('Empty response body');
-    return;
+  callbacks.onData({ type: 'phase', phase: 'queued' });
+
+  const pollIntervalMs = 2000;
+  const maxWaitMs = 90 * 60 * 1000;
+  const startedAt = Date.now();
+  let lastDetail = '';
+  let lastPhase = '';
+  let lastWorkerJobId = '';
+
+  while (Date.now() - startedAt < maxWaitMs) {
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+
+    const jobRes = await fetch(`/api/meeting/jobs/${encodeURIComponent(uploadJson.jobId)}`, {
+      signal,
+    });
+    if (!jobRes.ok) {
+      callbacks.onError(await parseErrorMessage(jobRes));
+      return;
+    }
+
+    const jobJson = (await jobRes.json()) as {
+      status?: string;
+      phase?: string;
+      detail?: string;
+      workerJobId?: string;
+      error?: string;
+      markdown?: string;
+      minutes?: MeetingMinutes;
+      transcript?: MeetingTranscript;
+    };
+
+    if (jobJson.phase && jobJson.phase !== lastPhase) {
+      lastPhase = jobJson.phase;
+      callbacks.onData({ type: 'phase', phase: jobJson.phase });
+    }
+    if (jobJson.detail && jobJson.detail !== lastDetail) {
+      lastDetail = jobJson.detail;
+      callbacks.onData({
+        type: 'transcribe',
+        detail: jobJson.detail,
+        phase: jobJson.phase ?? 'transcribing',
+        status: jobJson.status ?? 'running',
+      });
+    }
+    if (jobJson.workerJobId && jobJson.workerJobId !== lastWorkerJobId) {
+      lastWorkerJobId = jobJson.workerJobId;
+      callbacks.onData({
+        type: 'workerJob',
+        workerJobId: jobJson.workerJobId,
+      });
+    }
+    if (jobJson.transcript) {
+      callbacks.onTranscript?.(jobJson.transcript);
+      callbacks.onData({ type: 'transcript', transcript: jobJson.transcript });
+    }
+    if (jobJson.minutes) {
+      callbacks.onMinutes?.(jobJson.minutes);
+      callbacks.onData({ type: 'minutes', minutes: jobJson.minutes });
+    }
+    if (jobJson.markdown) {
+      callbacks.onMarkdown(jobJson.markdown);
+      callbacks.onData({ type: 'markdown', content: jobJson.markdown });
+    }
+
+    if (jobJson.status === 'failed') {
+      callbacks.onError(jobJson.error ?? 'Meeting processing failed');
+      return;
+    }
+    if (jobJson.status === 'completed') {
+      return;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
   }
 
-  let markdown = '';
-
-  await processDataStream({
-    stream: response.body,
-    onTextPart: text => {
-      markdown += text;
-      callbacks.onMarkdown(markdown);
-    },
-    onDataPart: data => {
-      callbacks.onData(data);
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        !Array.isArray(data) &&
-        (data as { type?: string }).type === 'markdown'
-      ) {
-        const content = (data as { content?: string }).content;
-        if (content) {
-          markdown = content;
-          callbacks.onMarkdown(markdown);
-        }
-      }
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        !Array.isArray(data) &&
-        (data as { type?: string }).type === 'minutes'
-      ) {
-        callbacks.onMinutes?.((data as { minutes: MeetingMinutes }).minutes);
-      }
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        !Array.isArray(data) &&
-        (data as { type?: string }).type === 'transcript' &&
-        (data as { transcript?: MeetingTranscript }).transcript
-      ) {
-        callbacks.onTranscript?.(
-          (data as { transcript: MeetingTranscript }).transcript,
-        );
-      }
-    },
-    onErrorPart: error => {
-      callbacks.onError(error);
-    },
-  });
+  callbacks.onError('Meeting processing timeout (90 min)');
 }

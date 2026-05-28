@@ -24,3 +24,9 @@ export function getMeetingPollTimeoutMs(): number {
   const ms = Number(process.env.MEETING_POLL_TIMEOUT_MS ?? '7200000');
   return Number.isFinite(ms) && ms > 60_000 ? ms : 7_200_000;
 }
+
+/** Per-batch LLM timeout for transcript punctuation (OpenRouter can exceed 2 min). */
+export function getMeetingPunctuateTimeoutMs(): number {
+  const ms = Number(process.env.MEETING_PUNCTUATE_TIMEOUT_MS ?? '300000');
+  return Number.isFinite(ms) && ms >= 30_000 ? ms : 300_000;
+}

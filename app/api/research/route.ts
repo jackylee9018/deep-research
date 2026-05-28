@@ -13,6 +13,10 @@ import {
   buildPromptWithAttachments,
   type PromptAttachment,
 } from '@/prompt-attachments';
+import {
+  resolveResearchOutputLanguage,
+  type ResearchOutputLanguage,
+} from '@/research-output-language';
 import { buildCombinedQuery, type FollowUpEntry } from '@/research-query';
 
 import { defaultResearchParams } from '../../lib/research-intensity';
@@ -27,6 +31,7 @@ type ResearchRequestBody = {
   model?: string;
   followUp?: FollowUpEntry[];
   attachments?: PromptAttachment[];
+  outputLanguage?: ResearchOutputLanguage;
   messages?: { role: string; content: string }[];
 };
 
@@ -72,6 +77,7 @@ export async function POST(req: Request) {
   const resolvedDepth = body.depth ?? depth;
   const mode = body.mode ?? 'report';
   const modelId = resolveResearchModelId(body.model);
+  const outputLanguage = resolveResearchOutputLanguage(body.outputLanguage);
   const attachments = Array.isArray(body.attachments)
     ? body.attachments.filter(
         (item): item is PromptAttachment =>
@@ -124,6 +130,7 @@ export async function POST(req: Request) {
           const answer = await writeFinalAnswer({
             prompt: combinedQuery,
             learnings: result.learnings,
+            outputLanguage,
           });
           dataStream.writeData({ type: 'answer', answer });
           dataStream.writeData({
@@ -146,6 +153,7 @@ export async function POST(req: Request) {
         const stream = streamFinalReport({
           prompt: combinedQuery,
           learnings: result.learnings,
+          outputLanguage,
         });
         stream.mergeIntoDataStream(dataStream);
         dataStream.writeData({

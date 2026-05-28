@@ -13,6 +13,7 @@ import {
 import type { JSONValue } from 'ai';
 
 import type { FollowUpEntry } from '@/research-query';
+import type { ResearchOutputLanguage } from '@/research-output-language';
 
 import {
   appendResearchHistory,
@@ -42,6 +43,7 @@ type EnqueueInput = {
   depth: number;
   mode: 'report' | 'answer';
   model: ResearchModelId;
+  outputLanguage: ResearchOutputLanguage;
   followUp?: FollowUpEntry[];
   attachments?: PromptAttachment[];
 };
@@ -172,6 +174,7 @@ export function ResearchJobsProvider({ children }: { children: ReactNode }) {
             depth: job.depth,
             mode: job.mode,
             model: job.model,
+            outputLanguage: job.outputLanguage,
             followUp: job.followUp,
             attachments: job.attachments,
           },

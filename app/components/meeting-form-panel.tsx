@@ -13,8 +13,6 @@ type MeetingFormPanelProps = {
   onDetailLevelChange: (value: 'brief' | 'full') => void;
   includeAppendix: boolean;
   onIncludeAppendixChange: (value: boolean) => void;
-  restorePunctuation: boolean;
-  onRestorePunctuationChange: (value: boolean) => void;
   onSubmit: (file: File) => void;
   loading?: boolean;
   disabled?: boolean;
@@ -29,8 +27,6 @@ export function MeetingFormPanel({
   onDetailLevelChange,
   includeAppendix,
   onIncludeAppendixChange,
-  restorePunctuation,
-  onRestorePunctuationChange,
   onSubmit,
   loading = false,
   disabled = false,
@@ -57,7 +53,7 @@ export function MeetingFormPanel({
   return (
     <HomePromptLayout
       title="會議摘要"
-      description="上傳 MP3 錄音，自動轉錄並區分說話者，產出結構化會議紀要（需本地 WhisperX worker + LLM）"
+      description="上傳 MP3/WAV/M4A/MP4 檔案，自動轉錄並區分說話者，產出結構化會議紀要（需本地 WhisperX worker + LLM）"
       topAction={
         <Link href="/" className="home-page-top-link" aria-label="返回首頁">
           ← 返回首頁
@@ -102,15 +98,6 @@ export function MeetingFormPanel({
               />
               附逐字稿
             </label>
-            <label className="meeting-form-check">
-              <input
-                type="checkbox"
-                checked={restorePunctuation}
-                onChange={e => onRestorePunctuationChange(e.target.checked)}
-                disabled={busy}
-              />
-              標點還原
-            </label>
           </div>
           <div className="meeting-service-status">
             {workerReady === null || llmReady === null ? (
@@ -133,7 +120,7 @@ export function MeetingFormPanel({
         <input
           ref={inputRef}
           type="file"
-          accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,.mp3,.wav,.m4a"
+          accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,video/mp4,.mp3,.wav,.m4a,.mp4"
           className="sr-only"
           onChange={onFileChange}
           disabled={busy}
@@ -144,10 +131,10 @@ export function MeetingFormPanel({
           onClick={pickFile}
           disabled={busy}
         >
-          {loading ? '處理中…' : '選擇 MP3 / WAV 音訊檔'}
+          {loading ? '處理中…' : '選擇 MP3 / WAV / M4A / MP4 檔案'}
         </button>
         <p className="meeting-upload-hint">
-          支援 MP3、WAV、M4A。Mac 上請先執行{' '}
+          支援 MP3、WAV、M4A、MP4。Mac 上請先執行{' '}
           <code className="meeting-inline-code">npm run meeting:worker</code>
         </p>
       </div>

@@ -1,6 +1,10 @@
 import type { JSONValue, Message } from 'ai';
 
 import type { FollowUpEntry } from '@/research-query';
+import {
+  resolveResearchOutputLanguage,
+  type ResearchOutputLanguage,
+} from '@/research-output-language';
 
 import type { PromptAttachment } from './prompt-attachments';
 import type { ResearchModelId } from './research-models';
@@ -14,6 +18,7 @@ export type ResearchJob = {
   depth: number;
   mode: 'report' | 'answer';
   model: ResearchModelId;
+  outputLanguage: ResearchOutputLanguage;
   followUp?: FollowUpEntry[];
   attachments?: PromptAttachment[];
   status: ResearchJobStatus;
@@ -41,6 +46,9 @@ export function loadPersistedJobs(): ResearchJob[] {
     }
     return parsed.map(job => ({
       ...job,
+      outputLanguage: resolveResearchOutputLanguage(
+        (job as { outputLanguage?: unknown }).outputLanguage,
+      ),
       status:
         job.status === 'running' || job.status === 'pending'
           ? 'failed'
@@ -72,6 +80,7 @@ export function createResearchJob(input: {
   depth: number;
   mode: 'report' | 'answer';
   model: ResearchModelId;
+  outputLanguage: ResearchOutputLanguage;
   followUp?: FollowUpEntry[];
   attachments?: PromptAttachment[];
 }): ResearchJob {

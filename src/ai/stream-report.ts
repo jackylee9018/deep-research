@@ -5,14 +5,20 @@ import {
   buildFinalReportPromptParts,
   REPORT_MARKDOWN_GUIDELINES,
 } from '../report-writing-guidelines';
+import {
+  outputLanguageInstruction,
+  type ResearchOutputLanguage,
+} from '../research-output-language';
 import { getModel, trimPrompt } from './providers';
 
 export function streamFinalReport({
   prompt,
   learnings,
+  outputLanguage = 'auto',
 }: {
   prompt: string;
   learnings: string[];
+  outputLanguage?: ResearchOutputLanguage;
 }) {
   const learningsString = learnings
     .map(learning => `<learning>\n${learning}\n</learning>`)
@@ -26,7 +32,7 @@ export function streamFinalReport({
     model: getModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
-      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as detailed as possible, aim for 3 or more pages, and include ALL the learnings from research. Do not include a Sources section — sources will be appended separately.\n\n${REPORT_MARKDOWN_GUIDELINES}\n\n${promptSection}\n\nHere are all the learnings from previous research:\n\n${learningsSection}`,
+      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as detailed as possible, aim for 3 or more pages, and include ALL the learnings from research. Do not include a Sources section — sources will be appended separately.\n\nLanguage rule: ${outputLanguageInstruction(outputLanguage)}\n\n${REPORT_MARKDOWN_GUIDELINES}\n\n${promptSection}\n\nHere are all the learnings from previous research:\n\n${learningsSection}`,
     ),
   });
 }

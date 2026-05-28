@@ -5,9 +5,15 @@ import {
   jobHasDisplayableContent,
   latestStreamDetail,
 } from '../lib/meeting-job-content';
+import { latestWorkerPhaseFromJobData } from '../lib/meeting-worker-progress';
 import { meetingPhaseLabel, meetingPhaseStepIndex } from '../lib/meeting-status';
 
 function latestPhase(job: MeetingJob): string | null {
+  const workerPhase = latestWorkerPhaseFromJobData(job.data);
+  if (workerPhase) {
+    return workerPhase === 'queued' ? 'transcribing' : workerPhase;
+  }
+
   for (let i = job.data.length - 1; i >= 0; i -= 1) {
     const part = job.data[i];
     if (

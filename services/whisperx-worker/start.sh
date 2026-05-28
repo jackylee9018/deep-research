@@ -38,6 +38,10 @@ load_env_file() {
 load_env_file "$ROOT/.env" 0
 load_env_file "$ROOT/.env.local" 1
 
+# Do NOT set DYLD_FALLBACK_LIBRARY_PATH to Homebrew ffmpeg@7 here.
+# It makes torchcodec load libavdevice alongside PyAV (av) and triggers objc duplicate-class warnings.
+# Meeting transcription uses whisperx.load_audio + in-memory diarization (see pipeline.py).
+
 if [[ ! -d .venv ]]; then
   python3 -m venv .venv
 fi
@@ -82,4 +86,5 @@ if lsof -nP -iTCP:8091 -sTCP:LISTEN >/dev/null 2>&1; then
   exit 1
 fi
 
-exec uvicorn app:app --host 127.0.0.1 --port 8091
+# --no-access-log: Next.js polls GET /jobs every 2s; hide from terminal noise.
+exec uvicorn app:app --host 127.0.0.1 --port 8091 --no-access-log

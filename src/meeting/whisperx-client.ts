@@ -87,6 +87,7 @@ export async function getWhisperxJobStatus(
 export async function waitForTranscription(
   workerJobId: string,
   onProgress?: (status: WhisperxJobStatus) => void,
+  onPartial?: (transcript: MeetingTranscript) => void,
 ): Promise<MeetingTranscript> {
   const started = Date.now();
   const interval = getMeetingPollIntervalMs();
@@ -95,6 +96,29 @@ export async function waitForTranscription(
   while (Date.now() - started < timeout) {
     const status = await getWhisperxJobStatus(workerJobId);
     onProgress?.(status);
+
+    if (
+      onPartial &&
+      (status.status === 'transcribing' ||
+        status.status === 'aligning' ||
+        status.status === 'diarizing')
+    ) {
+      try {
+        const partialRes = await fetch(
+          `${getWhisperxWorkerUrl()}/jobs/${encodeURIComponent(workerJobId)}/partial-result`,
+          { signal: AbortSignal.timeout(30_000) },
+        );
+        if (partialRes.ok) {
+          const partialJson = await partialRes.json();
+          const parsed = meetingTranscriptSchema.safeParse(partialJson);
+          if (parsed.success) {
+            onPartial(parsed.data);
+          }
+        }
+      } catch {
+        // partial transcript is best-effort
+      }
+    }
 
     if (status.status === 'done') {
       const res = await fetch(

@@ -11,6 +11,10 @@ import {
   REPORT_MARKDOWN_GUIDELINES,
   REPORT_MARKDOWN_SCHEMA_HINT,
 } from './report-writing-guidelines';
+import {
+  outputLanguageInstruction,
+  type ResearchOutputLanguage,
+} from './research-output-language';
 import { search, type SearchResponse } from './search';
 import { serpQueriesResponseSchema } from './serp-queries-schema';
 
@@ -158,10 +162,12 @@ export async function writeFinalReport({
   prompt,
   learnings,
   visitedUrls,
+  outputLanguage = 'auto',
 }: {
   prompt: string;
   learnings: string[];
   visitedUrls: string[];
+  outputLanguage?: ResearchOutputLanguage;
 }): Promise<FinalReportResult> {
   const learningsString = learnings
     .map(learning => `<learning>\n${learning}\n</learning>`)
@@ -175,7 +181,7 @@ export async function writeFinalReport({
     model: getModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
-      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as detailed as possible, aim for 3 or more pages, and include ALL the learnings from research.\n\n${REPORT_MARKDOWN_GUIDELINES}\n\n${promptSection}\n\nHere are all the learnings from previous research:\n\n${learningsSection}`,
+      `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as detailed as possible, aim for 3 or more pages, and include ALL the learnings from research.\n\nLanguage rule: ${outputLanguageInstruction(outputLanguage)}\n\n${REPORT_MARKDOWN_GUIDELINES}\n\n${promptSection}\n\nHere are all the learnings from previous research:\n\n${learningsSection}`,
     ),
     schema: z.object({
       reportTitle: z
@@ -199,9 +205,11 @@ export async function writeFinalReport({
 export async function writeFinalAnswer({
   prompt,
   learnings,
+  outputLanguage = 'auto',
 }: {
   prompt: string;
   learnings: string[];
+  outputLanguage?: ResearchOutputLanguage;
 }) {
   const learningsString = learnings
     .map(learning => `<learning>\n${learning}\n</learning>`)
@@ -211,7 +219,7 @@ export async function writeFinalAnswer({
     model: getModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
-      `Given the following prompt from the user, write a final answer on the topic using the learnings from research. Follow the format specified in the prompt. Do not yap or babble or include any other text than the answer besides the format specified in the prompt. Keep the answer as concise as possible - usually it should be just a few words or maximum a sentence. Try to follow the format specified in the prompt (for example, if the prompt is using Latex, the answer should be in Latex. If the prompt gives multiple answer choices, the answer should be one of the choices).\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from research on the topic that you can use to help answer the prompt:\n\n<learnings>\n${learningsString}\n</learnings>`,
+      `Given the following prompt from the user, write a final answer on the topic using the learnings from research. Follow the format specified in the prompt. Do not yap or babble or include any other text than the answer besides the format specified in the prompt. Keep the answer as concise as possible - usually it should be just a few words or maximum a sentence. Try to follow the format specified in the prompt (for example, if the prompt is using Latex, the answer should be in Latex. If the prompt gives multiple answer choices, the answer should be one of the choices).\n\nLanguage rule: ${outputLanguageInstruction(outputLanguage)}\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from research on the topic that you can use to help answer the prompt:\n\n<learnings>\n${learningsString}\n</learnings>`,
     ),
     schema: z.object({
       exactAnswer: z

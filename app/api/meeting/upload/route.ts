@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
   if (!isMeetingAudioFile(file)) {
     return Response.json(
-      { error: '僅支援 MP3、WAV、M4A 音訊檔案' },
+      { error: '僅支援 MP3、WAV、M4A、MP4 檔案' },
       { status: 400 },
     );
   }

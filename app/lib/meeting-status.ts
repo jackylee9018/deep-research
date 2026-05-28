@@ -18,6 +18,7 @@ export function meetingPhaseLabel(phase: string): string {
   const map: Record<string, string> = {
     uploading: '上傳音訊',
     transcribing: '語音轉文字',
+    queued: '排隊等待轉錄',
     preprocessing: '音訊前處理',
     loading: '載入模型',
     aligning: '對齊時間軸',
@@ -39,6 +40,7 @@ export function meetingPhaseStepIndex(phase: string | null): number {
   }
   if (
     phase === 'transcribing' ||
+    phase === 'queued' ||
     phase === 'preprocessing' ||
     phase === 'loading' ||
     phase === 'aligning' ||

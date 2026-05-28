@@ -1,6 +1,7 @@
 import { processDataStream, type JSONValue } from 'ai';
 
 import type { FollowUpEntry } from '@/research-query';
+import type { ResearchOutputLanguage } from '@/research-output-language';
 
 import type { PromptAttachment } from './prompt-attachments';
 import type { ResearchModelId } from './research-models';
@@ -18,6 +19,7 @@ export async function runResearchStream(
     depth: number;
     mode: 'report' | 'answer';
     model: ResearchModelId;
+    outputLanguage: ResearchOutputLanguage;
     followUp?: FollowUpEntry[];
     attachments?: PromptAttachment[];
   },
@@ -33,6 +35,7 @@ export async function runResearchStream(
       depth: body.depth,
       mode: body.mode,
       model: body.model,
+      outputLanguage: body.outputLanguage,
       followUp: body.followUp,
       attachments: body.attachments,
       messages: [{ role: 'user', content: body.query }],

@@ -40,7 +40,6 @@ type EnqueueInput = {
   language: string;
   detailLevel: 'brief' | 'full';
   includeAppendix: boolean;
-  restorePunctuation: boolean;
   minSpeakers?: number;
   maxSpeakers?: number;
 };
@@ -241,35 +240,11 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    const job = jobs.find(item => item.id === activeJobId);
+    const job = jobsRef.current.find(item => item.id === activeJobId);
     if (job) {
       void hydrateJobFromServer(job);
     }
-  }, [activeJobId, jobs, hydrateJobFromServer]);
-
-  useEffect(() => {
-    if (!hydrated.current) {
-      return;
-    }
-    for (const job of jobs) {
-      void hydrateJobFromServer(job);
-    }
-  }, [jobs, hydrateJobFromServer]);
-
-  useEffect(() => {
-    const running = jobs.filter(
-      job => job.status === 'running' && job.serverJobId,
-    );
-    if (running.length === 0) {
-      return;
-    }
-    const timer = window.setInterval(() => {
-      for (const job of running) {
-        void hydrateJobFromServer(job);
-      }
-    }, 4000);
-    return () => window.clearInterval(timer);
-  }, [jobs, hydrateJobFromServer]);
+  }, [activeJobId, hydrateJobFromServer]);
 
   const applyDataPart = useCallback(
     (jobId: string, data: JSONValue, dataParts: JSONValue[]) => {
@@ -321,6 +296,10 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
           if (data.type === 'job' && typeof data.jobId === 'string') {
             streamServerJobId = data.jobId;
             updateJob(jobId, { serverJobId: data.jobId });
+          }
+
+          if (data.type === 'workerJob' && typeof data.workerJobId === 'string') {
+            updateJob(jobId, { workerJobId: data.workerJobId });
           }
 
           if (
@@ -378,6 +357,19 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
           }
         }
 
+        if (
+          isRecord(data) &&
+          data.type === 'workerJob' &&
+          typeof data.workerJobId === 'string'
+        ) {
+          dataParts.push(data);
+          updateJob(jobId, {
+            workerJobId: data.workerJobId,
+            data: [...dataParts],
+          });
+          return;
+        }
+
         dataParts.push(data);
         applyDataPart(jobId, data, dataParts);
       };
@@ -389,7 +381,6 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
             language: input.language,
             detailLevel: input.detailLevel,
             includeAppendix: input.includeAppendix,
-            restorePunctuation: input.restorePunctuation,
             minSpeakers: input.minSpeakers,
             maxSpeakers: input.maxSpeakers,
           },
@@ -500,7 +491,6 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
         language: input.language,
         detailLevel: input.detailLevel,
         includeAppendix: input.includeAppendix,
-        restorePunctuation: input.restorePunctuation,
       });
       fileRegistry.current.set(job.id, input.file);
       setJobs(prev => [job, ...prev]);
