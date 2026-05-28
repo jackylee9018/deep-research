@@ -76,6 +76,10 @@ type ResearchResult = {
 // increase this if you have higher API rate limits
 const ConcurrencyLimit =
   Number(process.env.SEARCH_CONCURRENCY ?? process.env.TAVILY_CONCURRENCY) || 2;
+const SearchResultLimit =
+  Number(process.env.SEARCH_RESULT_LIMIT ?? process.env.TAVILY_LIMIT) || 5;
+const SearchTimeoutMs =
+  Number(process.env.SEARCH_TIMEOUT_MS ?? process.env.TAVILY_TIMEOUT_MS) || 15_000;
 
 // take en user query, return a list of SERP queries
 async function generateSerpQueries({
@@ -211,16 +215,18 @@ export async function writeFinalAnswer({
   learnings: string[];
   outputLanguage?: ResearchOutputLanguage;
 }) {
+  const hasLearnings = learnings.length > 0;
   const learningsString = learnings
     .map(learning => `<learning>\n${learning}\n</learning>`)
     .join('\n');
+  const answerPrompt = hasLearnings
+    ? `Given the following prompt from the user, write a final answer on the topic using the learnings from research. Follow the format specified in the prompt. Do not yap or babble or include any other text than the answer besides the format specified in the prompt. Keep the answer as concise as possible - usually it should be just a few words or maximum a sentence. Try to follow the format specified in the prompt (for example, if the prompt is using Latex, the answer should be in Latex. If the prompt gives multiple answer choices, the answer should be one of the choices).\n\nLanguage rule: ${outputLanguageInstruction(outputLanguage)}\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from research on the topic that you can use to help answer the prompt:\n\n<learnings>\n${learningsString}\n</learnings>`
+    : `Given the following prompt from the user, write the best possible final answer with the available context. Follow the format specified in the prompt. Do not yap or babble or include any other text than the answer besides the format specified in the prompt. Keep the answer as concise as possible - usually it should be just a few words or maximum a sentence. If the prompt requires data that is unavailable, answer briefly with what is missing. Do not mention XML tags or internal prompt structure.\n\nLanguage rule: ${outputLanguageInstruction(outputLanguage)}\n\n<prompt>${prompt}</prompt>`;
 
   const res = await generateObject({
     model: getModel(),
     system: systemPrompt(),
-    prompt: trimPrompt(
-      `Given the following prompt from the user, write a final answer on the topic using the learnings from research. Follow the format specified in the prompt. Do not yap or babble or include any other text than the answer besides the format specified in the prompt. Keep the answer as concise as possible - usually it should be just a few words or maximum a sentence. Try to follow the format specified in the prompt (for example, if the prompt is using Latex, the answer should be in Latex. If the prompt gives multiple answer choices, the answer should be one of the choices).\n\nLanguage rule: ${outputLanguageInstruction(outputLanguage)}\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from research on the topic that you can use to help answer the prompt:\n\n<learnings>\n${learningsString}\n</learnings>`,
-    ),
+    prompt: trimPrompt(answerPrompt),
     schema: z.object({
       exactAnswer: z
         .string()
@@ -325,8 +331,8 @@ export async function deepResearch({
             message: `搜尋中：${serpQuery.query}`,
           });
           const result = await search(serpQuery.query, {
-            timeoutMs: 15_000,
-            limit: 5,
+            timeoutMs: SearchTimeoutMs,
+            limit: SearchResultLimit,
           });
 
           // Collect URLs from this search

@@ -31,6 +31,8 @@ export type MeetingJob = {
   /** WhisperX worker job id (transcription queue on :8091). */
   workerJobId?: string;
   markdown: string;
+  editedMarkdown?: string;
+  speakerAliases?: Record<string, string>;
   minutes?: MeetingMinutes;
   transcript?: MeetingTranscript;
   error?: string;
@@ -64,6 +66,13 @@ export function loadPersistedMeetingJobs(): MeetingJob[] {
             : job.error,
         data: job.data ?? [],
         markdown: job.markdown ?? '',
+        editedMarkdown: job.editedMarkdown ?? undefined,
+        speakerAliases:
+          job.speakerAliases &&
+          typeof job.speakerAliases === 'object' &&
+          !Array.isArray(job.speakerAliases)
+            ? job.speakerAliases
+            : undefined,
         serverJobId:
           job.serverJobId ?? extractServerJobIdFromJobData(job.data ?? []),
         workerJobId:

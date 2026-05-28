@@ -236,6 +236,7 @@ export function finalizeMeetingJobContent(
 export function meetingJobForPersistence(job: MeetingJob): MeetingJob {
   const markdown = resolveJobMarkdown(job);
   const minutes = resolveJobMinutes(job);
+  const transcript = resolveJobTranscript(job);
   const serverJobId = job.serverJobId ?? extractServerJobIdFromJobData(job.data);
 
   const slimData = job.data.filter(part => {
@@ -256,6 +257,12 @@ export function meetingJobForPersistence(job: MeetingJob): MeetingJob {
   if (minutes) {
     slimData.push({ type: 'minutes', minutes: minutes as unknown as JSONValue });
   }
+  if (transcript) {
+    slimData.push({
+      type: 'transcript',
+      transcript: transcript as unknown as JSONValue,
+    });
+  }
   if (serverJobId) {
     slimData.push({ type: 'job', jobId: serverJobId });
   }
@@ -265,7 +272,7 @@ export function meetingJobForPersistence(job: MeetingJob): MeetingJob {
     serverJobId: serverJobId ?? undefined,
     markdown,
     minutes,
-    transcript: undefined,
+    transcript,
     data: slimData,
   };
 }

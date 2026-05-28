@@ -5220,6 +5220,164 @@ body:has(.light-route-shell.route-bg--ppt) {
 .meeting-markdown {
   max-width: 100%;
   overflow-x: auto;
+  min-height: 62vh;
+}
+
+.meeting-markdown-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.meeting-markdown-editor-actions button {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #fff;
+  border-radius: 8px;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.meeting-markdown-editor-actions button:last-child {
+  width: auto;
+  height: auto;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+.meeting-markdown-editor {
+  width: 100%;
+  height: calc(62vh - 3rem);
+  min-height: 380px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 10px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+}
+
+.meeting-plain-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: calc(62vh - 3rem);
+  overflow: auto;
+}
+
+.meeting-plain-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.meeting-plain-editor label span,
+.meeting-plain-editor-actions span {
+  font-size: 0.8rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.meeting-plain-editor input,
+.meeting-plain-editor textarea {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.88rem;
+}
+
+.meeting-plain-editor textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.meeting-plain-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.meeting-plain-editor-actions button,
+.meeting-plain-editor-action-row button {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.meeting-plain-editor-action-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 120px auto;
+  gap: 0.45rem;
+}
+
+.meeting-speaker-alias-panel {
+  margin-bottom: 0.75rem;
+  padding: 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.meeting-speaker-alias-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.meeting-speaker-alias-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.meeting-speaker-alias-progress {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.meeting-speaker-alias-toggle {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.8);
+  color: #334155;
+  border-radius: 8px;
+  padding: 0.38rem 0.62rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.meeting-speaker-alias-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.meeting-speaker-alias-item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.meeting-speaker-alias-item input {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 8px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.85rem;
 }
 
 .meeting-transcript-list {

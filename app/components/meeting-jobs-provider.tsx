@@ -52,6 +52,7 @@ type MeetingJobsContextValue = {
   enqueueJob: (input: EnqueueInput) => string;
   cancelJob: (id: string) => void;
   dismissJob: (id: string) => void;
+  updateJob: (id: string, patch: Partial<MeetingJob>) => void;
   runningCount: number;
 };
 
@@ -525,9 +526,10 @@ export function MeetingJobsProvider({ children }: { children: ReactNode }) {
       enqueueJob,
       cancelJob,
       dismissJob,
+      updateJob,
       runningCount: jobs.filter(j => j.status === 'running').length,
     }),
-    [jobs, activeJobId, enqueueJob, cancelJob, dismissJob],
+    [jobs, activeJobId, enqueueJob, cancelJob, dismissJob, updateJob],
   );
 
   return (

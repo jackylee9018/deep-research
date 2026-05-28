@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   docxExportFilename,
-  pdfExportFilename,
 } from '@/export-report';
+import { renderMeetingMinutesMarkdown } from '@/meeting/render-minutes-md';
+import type { MeetingMinutes } from '@/meeting/schemas/minutes';
+import { filenameFromTitle } from '@/slugify';
 import { formatTimestamp } from '@/meeting/format-transcript';
 
 import type { MeetingJob } from '../lib/meeting-jobs';
@@ -22,13 +24,105 @@ import {
   fetchDocxExport,
   fetchPdfExport,
 } from '../lib/client-export';
+import { useMeetingJobs } from './meeting-jobs-provider';
 import { ResearchMarkdownContent } from './research-markdown';
 
 type Tab = 'minutes' | 'transcript' | 'actions';
 
+type EditableMinutes = {
+  title: string;
+  summary: string;
+  participantsText: string;
+  agendaText: string;
+  keyDecisionsText: string;
+  openQuestionsText: string;
+  actionItems: { owner: string; task: string; deadline: string }[];
+};
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function applySpeakerAliasesToText(
+  text: string,
+  aliases: Record<string, string>,
+): string {
+  let output = text;
+  for (const [speaker, alias] of Object.entries(aliases)) {
+    const name = alias.trim();
+    if (!name) {
+      continue;
+    }
+    output = output.replace(new RegExp(escapeRegExp(speaker), 'g'), name);
+  }
+  return output;
+}
+
+function meetingPdfExportFilename(title: string): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  const timestamp = `${yyyy}${mm}${dd}-${hh}${min}`;
+  const fallbackTitle = title.trim() || 'meeting-minutes';
+  return filenameFromTitle(`${timestamp}-${fallbackTitle}`, '.pdf');
+}
+
+function linesToList(text: string): string[] {
+  return text
+    .split('\n')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function minutesToEditable(minutes: MeetingMinutes, fallbackTitle: string): EditableMinutes {
+  return {
+    title: minutes.title || fallbackTitle,
+    summary: minutes.summary || '',
+    participantsText: minutes.participants.join('\n'),
+    agendaText: minutes.agenda.join('\n'),
+    keyDecisionsText: minutes.keyDecisions.join('\n'),
+    openQuestionsText: minutes.openQuestions.join('\n'),
+    actionItems: minutes.actionItems.map(item => ({
+      owner: item.owner,
+      task: item.task,
+      deadline: item.deadline ?? '',
+    })),
+  };
+}
+
+function editableToMinutes(value: EditableMinutes): MeetingMinutes {
+  return {
+    title: value.title.trim() || '會議紀要',
+    summary: value.summary.trim(),
+    participants: linesToList(value.participantsText),
+    agenda: linesToList(value.agendaText),
+    keyDecisions: linesToList(value.keyDecisionsText),
+    actionItems: value.actionItems
+      .map(item => ({
+        owner: item.owner.trim(),
+        task: item.task.trim(),
+        deadline: item.deadline.trim() || undefined,
+      }))
+      .filter(item => item.owner || item.task),
+    openQuestions: linesToList(value.openQuestionsText),
+    speakerHighlights: [],
+  };
+}
+
 export function MeetingResultPanel({ job }: { job: MeetingJob }) {
+  const { updateJob } = useMeetingJobs();
   const [tab, setTab] = useState<Tab>('minutes');
   const [exporting, setExporting] = useState(false);
+  const [speakerAliases, setSpeakerAliases] = useState<Record<string, string>>(
+    {},
+  );
+  const [editableMarkdown, setEditableMarkdown] = useState('');
+  const [hasManualMarkdown, setHasManualMarkdown] = useState(false);
+  const [minutesEditMode, setMinutesEditMode] = useState(false);
+  const [editedMinutes, setEditedMinutes] = useState<EditableMinutes | null>(null);
 
   const markdown = resolveJobMarkdown(job);
   const minutes = resolveJobMinutes(job);
@@ -36,6 +130,14 @@ export function MeetingResultPanel({ job }: { job: MeetingJob }) {
   const hasContent = jobHasDisplayableContent(job);
   const actionItems = minutes?.actionItems ?? [];
   const title = minutes?.title ?? job.fileName;
+  const renderedMarkdown = useMemo(
+    () => applySpeakerAliasesToText(editableMarkdown, speakerAliases),
+    [editableMarkdown, speakerAliases],
+  );
+  const displayActionItems = useMemo(
+    () => (hasManualMarkdown && editedMinutes ? editedMinutes.actionItems : actionItems),
+    [actionItems, editedMinutes, hasManualMarkdown],
+  );
 
   const transcriptLines = useMemo(() => {
     if (!transcript?.utterances.length) {
@@ -43,14 +145,68 @@ export function MeetingResultPanel({ job }: { job: MeetingJob }) {
     }
     return transcript.utterances.map(u => ({
       id: u.id,
-      label: `[${formatTimestamp(u.startSec)}] ${u.speaker}`,
+      label: `[${formatTimestamp(u.startSec)}] ${
+        speakerAliases[u.speaker]?.trim() || u.speaker
+      }`,
       text: u.text,
     }));
+  }, [transcript, speakerAliases]);
+  const speakers = useMemo(() => {
+    if (!transcript?.utterances.length) {
+      return [];
+    }
+    const seen = new Set<string>();
+    const orderedSpeakers: string[] = [];
+    for (const utterance of transcript.utterances) {
+      if (!seen.has(utterance.speaker)) {
+        seen.add(utterance.speaker);
+        orderedSpeakers.push(utterance.speaker);
+      }
+    }
+    return orderedSpeakers;
   }, [transcript]);
 
   useEffect(() => {
     setTab('minutes');
+    const persistedAliases = job.speakerAliases ?? {};
+    const persistedEditedMarkdown = job.editedMarkdown;
+    setSpeakerAliases(persistedAliases);
+    setEditableMarkdown(persistedEditedMarkdown ?? markdown);
+    setHasManualMarkdown(Boolean(persistedEditedMarkdown?.trim()));
+    if (minutes) {
+      setEditedMinutes(minutesToEditable(minutes, job.fileName));
+    } else {
+      setEditedMinutes(null);
+    }
+    setMinutesEditMode(false);
   }, [job.id]);
+
+  useEffect(() => {
+    if (!hasManualMarkdown) {
+      setEditableMarkdown(markdown);
+    }
+  }, [markdown, hasManualMarkdown]);
+
+  useEffect(() => {
+    if (!minutes || hasManualMarkdown) {
+      return;
+    }
+    setEditedMinutes(minutesToEditable(minutes, job.fileName));
+  }, [hasManualMarkdown, job.fileName, minutes]);
+
+  useEffect(() => {
+    updateJob(job.id, {
+      speakerAliases:
+        Object.keys(speakerAliases).length > 0 ? speakerAliases : undefined,
+    });
+  }, [job.id, speakerAliases, updateJob]);
+
+  useEffect(() => {
+    updateJob(job.id, {
+      editedMarkdown:
+        hasManualMarkdown && editableMarkdown.trim() ? editableMarkdown : undefined,
+    });
+  }, [editableMarkdown, hasManualMarkdown, job.id, updateJob]);
 
   useEffect(() => {
     if (job.status === 'running' && !markdown && transcriptLines.length > 0) {
@@ -71,40 +227,51 @@ export function MeetingResultPanel({ job }: { job: MeetingJob }) {
   }, [job.status, markdown, transcriptLines.length]);
 
   const exportDocx = async () => {
-    if (!markdown) {
+    if (!renderedMarkdown) {
       return;
     }
     setExporting(true);
     try {
-      const blob = await fetchDocxExport(markdown, title);
-      downloadBlob(blob, docxExportFilename(markdown, title));
+      const blob = await fetchDocxExport(renderedMarkdown, title);
+      downloadBlob(blob, docxExportFilename(renderedMarkdown, title));
     } finally {
       setExporting(false);
     }
   };
 
   const exportPdf = async () => {
-    if (!markdown) {
+    if (!renderedMarkdown) {
       return;
     }
     setExporting(true);
     try {
-      const blob = await fetchPdfExport(markdown, title);
-      downloadBlob(blob, pdfExportFilename(markdown, title));
+      const blob = await fetchPdfExport(renderedMarkdown, title);
+      downloadBlob(blob, meetingPdfExportFilename(title));
     } finally {
       setExporting(false);
     }
   };
 
   const exportMd = () => {
-    if (!markdown) {
+    if (!renderedMarkdown) {
       return;
     }
     downloadTextFile(
-      markdown,
+      renderedMarkdown,
       `${job.fileName.replace(/\.[^.]+$/, '')}-minutes.md`,
       'text/markdown',
     );
+  };
+
+  const applyMinutesEdit = (next: EditableMinutes) => {
+    setEditedMinutes(next);
+    const nextMarkdown = renderMeetingMinutesMarkdown(
+      editableToMinutes(next),
+      transcript,
+      { includeAppendix: Boolean(transcript?.utterances.length) },
+    );
+    setEditableMarkdown(nextMarkdown);
+    setHasManualMarkdown(true);
   };
 
   if (job.status === 'running' && !hasContent) {
@@ -178,20 +345,20 @@ export function MeetingResultPanel({ job }: { job: MeetingJob }) {
           ) : null}
         </div>
         <div className="meeting-export-actions">
-          <button type="button" onClick={exportMd} disabled={!markdown}>
+          <button type="button" onClick={exportMd} disabled={!renderedMarkdown}>
             Markdown
           </button>
           <button
             type="button"
             onClick={() => void exportDocx()}
-            disabled={!markdown || exporting}
+            disabled={!renderedMarkdown || exporting}
           >
             Word
           </button>
           <button
             type="button"
             onClick={() => void exportPdf()}
-            disabled={!markdown || exporting}
+            disabled={!renderedMarkdown || exporting}
           >
             PDF
           </button>
@@ -199,9 +366,42 @@ export function MeetingResultPanel({ job }: { job: MeetingJob }) {
       </div>
 
       {tab === 'minutes' ? (
-        markdown ? (
+        renderedMarkdown ? (
           <article className="meeting-markdown">
-            <ResearchMarkdownContent content={markdown} mode="report" />
+            <div className="meeting-markdown-editor-actions">
+              <button
+                type="button"
+                onClick={() => setMinutesEditMode(mode => !mode)}
+                aria-label={minutesEditMode ? '切換到預覽' : '切換到編輯'}
+                title={minutesEditMode ? '預覽' : '編輯'}
+              >
+                ✏️
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditableMarkdown(markdown);
+                  if (minutes) {
+                    setEditedMinutes(minutesToEditable(minutes, job.fileName));
+                  }
+                  setHasManualMarkdown(false);
+                  setMinutesEditMode(false);
+                  updateJob(job.id, { editedMarkdown: undefined });
+                }}
+                disabled={!hasManualMarkdown}
+              >
+                還原 AI 版本
+              </button>
+            </div>
+            {minutesEditMode ? (
+              editedMinutes ? (
+                <MinutesPlainEditor value={editedMinutes} onChange={applyMinutesEdit} />
+              ) : (
+                <p className="meeting-empty">尚無可編輯會議內容</p>
+              )
+            ) : (
+              <ResearchMarkdownContent content={renderedMarkdown} mode="report" />
+            )}
           </article>
         ) : (
           <p className="meeting-empty">
@@ -213,33 +413,207 @@ export function MeetingResultPanel({ job }: { job: MeetingJob }) {
       ) : null}
 
       {tab === 'transcript' ? (
-        <TranscriptList lines={transcriptLines} />
+        <TranscriptList
+          lines={transcriptLines}
+          speakers={speakers}
+          aliases={speakerAliases}
+          onAliasChange={(speaker, alias) =>
+            setSpeakerAliases(prev => ({ ...prev, [speaker]: alias }))
+          }
+        />
       ) : null}
 
       {tab === 'actions' ? (
-        <ActionsTable items={actionItems} />
+        <ActionsTable
+          items={displayActionItems.map(item => ({
+            ...item,
+            owner: speakerAliases[item.owner]?.trim() || item.owner,
+          }))}
+        />
       ) : null}
     </section>
   );
 }
 
-function TranscriptList({
-  lines,
+function MinutesPlainEditor({
+  value,
+  onChange,
 }: {
-  lines: { id: string; label: string; text: string }[];
+  value: EditableMinutes;
+  onChange: (next: EditableMinutes) => void;
 }) {
-  if (!lines.length) {
-    return <p className="meeting-empty">尚無逐字稿</p>;
-  }
+  const updateActionItem = (
+    index: number,
+    field: 'owner' | 'task' | 'deadline',
+    fieldValue: string,
+  ) => {
+    const nextItems = value.actionItems.map((item, itemIndex) =>
+      itemIndex === index ? { ...item, [field]: fieldValue } : item,
+    );
+    onChange({ ...value, actionItems: nextItems });
+  };
+
+  const addActionItem = () => {
+    onChange({
+      ...value,
+      actionItems: [...value.actionItems, { owner: '', task: '', deadline: '' }],
+    });
+  };
+
+  const removeActionItem = (index: number) => {
+    onChange({
+      ...value,
+      actionItems: value.actionItems.filter((_, itemIndex) => itemIndex !== index),
+    });
+  };
+
   return (
-    <div className="meeting-transcript-list">
-      {lines.map(line => (
-        <div key={line.id} className="meeting-transcript-line">
-          <div className="meeting-transcript-meta">{line.label}</div>
-          <p>{line.text}</p>
+    <div className="meeting-plain-editor">
+      <label>
+        <span>標題</span>
+        <input
+          type="text"
+          value={value.title}
+          onChange={event => onChange({ ...value, title: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>摘要</span>
+        <textarea
+          value={value.summary}
+          onChange={event => onChange({ ...value, summary: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>與會者（每行一位）</span>
+        <textarea
+          value={value.participantsText}
+          onChange={event => onChange({ ...value, participantsText: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>討論議題（每行一項）</span>
+        <textarea
+          value={value.agendaText}
+          onChange={event => onChange({ ...value, agendaText: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>決策（每行一項）</span>
+        <textarea
+          value={value.keyDecisionsText}
+          onChange={event => onChange({ ...value, keyDecisionsText: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>未決事項（每行一項）</span>
+        <textarea
+          value={value.openQuestionsText}
+          onChange={event => onChange({ ...value, openQuestionsText: event.target.value })}
+        />
+      </label>
+      <div className="meeting-plain-editor-actions">
+        <span>待辦事項</span>
+        <button type="button" onClick={addActionItem}>
+          + 新增
+        </button>
+      </div>
+      {value.actionItems.map((item, index) => (
+        <div key={index} className="meeting-plain-editor-action-row">
+          <input
+            type="text"
+            placeholder="負責人"
+            value={item.owner}
+            onChange={event => updateActionItem(index, 'owner', event.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="事項"
+            value={item.task}
+            onChange={event => updateActionItem(index, 'task', event.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="期限"
+            value={item.deadline}
+            onChange={event => updateActionItem(index, 'deadline', event.target.value)}
+          />
+          <button type="button" onClick={() => removeActionItem(index)}>
+            刪除
+          </button>
         </div>
       ))}
     </div>
+  );
+}
+
+function TranscriptList({
+  lines,
+  speakers,
+  aliases,
+  onAliasChange,
+}: {
+  lines: { id: string; label: string; text: string }[];
+  speakers: string[];
+  aliases: Record<string, string>;
+  onAliasChange: (speaker: string, alias: string) => void;
+}) {
+  const [aliasEditorOpen, setAliasEditorOpen] = useState(false);
+
+  if (!lines.length) {
+    return <p className="meeting-empty">尚無逐字稿</p>;
+  }
+
+  const namedCount = speakers.filter(speaker => Boolean(aliases[speaker]?.trim())).length;
+  const unnamedCount = Math.max(0, speakers.length - namedCount);
+
+  return (
+    <>
+      {speakers.length ? (
+        <div className="meeting-speaker-alias-panel">
+          <div className="meeting-speaker-alias-head">
+            <div>
+              <p className="meeting-speaker-alias-title">發言者姓名對應</p>
+              <p className="meeting-speaker-alias-progress">
+                已命名 {namedCount}/{speakers.length}
+                {unnamedCount > 0 ? `（尚有 ${unnamedCount} 位待命名）` : ''}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="meeting-speaker-alias-toggle"
+              onClick={() => setAliasEditorOpen(open => !open)}
+              aria-expanded={aliasEditorOpen}
+            >
+              {aliasEditorOpen ? '收合' : '編輯發言者'}
+            </button>
+          </div>
+          {aliasEditorOpen ? (
+            <div className="meeting-speaker-alias-grid">
+              {speakers.map(speaker => (
+                <label key={speaker} className="meeting-speaker-alias-item">
+                  <span>{speaker}</span>
+                  <input
+                    type="text"
+                    value={aliases[speaker] ?? ''}
+                    onChange={event => onAliasChange(speaker, event.target.value)}
+                    placeholder="輸入姓名"
+                  />
+                </label>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="meeting-transcript-list">
+        {lines.map(line => (
+          <div key={line.id} className="meeting-transcript-line">
+            <div className="meeting-transcript-meta">{line.label}</div>
+            <p>{line.text}</p>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
